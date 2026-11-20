@@ -1,0 +1,2011 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>普通話三聲（上聲）與變調語音檢測工具 | 粵語母語者專屬</title>
+    <!-- 引入 Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- 引入 Google Fonts: Noto Sans TC / SC 與 Inter -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Noto+Sans+SC:wght@400;500;700&family=Noto+Sans+TC:wght@400;500;700&display=swap" rel="stylesheet">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['"Noto Sans TC"', '"Noto Sans SC"', 'Inter', 'sans-serif'],
+                    },
+                    colors: {
+                        brand: {
+                            50: '#f0fdfa',
+                            100: '#ccfbf1',
+                            500: '#14b8a6',
+                            600: '#0d9488',
+                            700: '#0f766e',
+                            900: '#134e4a',
+                        },
+                        cantonese: {
+                            50: '#faf5ff',
+                            100: '#f3e8ff',
+                            500: '#a855f7',
+                            600: '#9333ea',
+                            700: '#7e22ce',
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        /* 自訂滾動條與動畫效果 */
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #f1f5f9;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #cbd5e1;
+            border-radius: 3px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #94a3b8;
+        }
+        @keyframes pulse-ring {
+            0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.7); }
+            70% { transform: scale(1); box-shadow: 0 0 0 12px rgba(239, 68, 68, 0); }
+            100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(239, 68, 68, 0); }
+        }
+        .recording-pulse {
+            animation: pulse-ring 1.5s infinite;
+        }
+    </style>
+</head>
+<body class="bg-slate-50 text-slate-800 antialiased selection:bg-brand-100 selection:text-brand-900">
+
+    <!-- 頂部導航列 -->
+    <header class="bg-white border-b border-slate-200 sticky top-0 z-30 shadow-sm">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between gap-2">
+            <div class="flex items-center gap-3">
+                <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-teal-600 to-emerald-700 text-white flex items-center justify-center font-bold text-lg shadow-sm shrink-0">
+                    214
+                </div>
+                <div>
+                    <h1 class="text-base sm:text-lg font-bold text-slate-900 leading-tight" data-i18n="appTitle">
+                        普通話三聲（上聲）與變調語音檢測工具
+                    </h1>
+                    <p class="text-xs text-slate-500 hidden sm:block" data-i18n="appSubtitle">
+                        基於五度標記法與粵語六聲母語負遷移聲學對照系統
+                    </p>
+                </div>
+            </div>
+
+            <div class="flex items-center gap-2 sm:gap-3">
+                <!-- 音域校準按鈕 -->
+                <button id="btnOpenCalibrate" class="flex items-center gap-1.5 px-3 py-1.5 text-xs sm:text-sm font-medium rounded-lg border border-slate-300 bg-white hover:bg-slate-50 text-slate-700 transition shadow-sm">
+                    <svg class="w-4 h-4 text-teal-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4"></path></svg>
+                    <span data-i18n="calibrateBtn">音域校準</span>
+                    <span id="rangeBadge" class="hidden md:inline-block text-[11px] bg-slate-100 text-slate-600 px-1.5 py-0.5 rounded font-mono">110-260Hz</span>
+                </button>
+
+                <!-- 繁簡切換按鈕 -->
+                <button id="btnToggleLang" class="px-3 py-1.5 text-xs sm:text-sm font-medium rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 transition">
+                    簡體中文
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- 系統訊息提示條 (取代 alert) -->
+    <div id="toastContainer" class="fixed bottom-4 right-4 z-50 flex flex-col gap-2 max-w-sm w-full pointer-events-none px-4 sm:px-0"></div>
+
+    <!-- 主工作台容器 -->
+    <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-6">
+
+        <!-- 頂部：練習場景與詞庫選擇器 -->
+        <section class="bg-white rounded-2xl border border-slate-200 shadow-sm p-4 sm:p-5">
+            <div class="flex flex-col lg:flex-row lg:items-center justify-between gap-4 border-b border-slate-100 pb-4">
+                <!-- 三大變調規則分類頁籤 -->
+                <div class="flex flex-wrap gap-2" id="categoryTabs">
+                    <button data-cat="full" class="cat-tab active px-3.5 py-2 rounded-xl text-sm font-semibold transition flex items-center gap-2 bg-teal-600 text-white shadow-sm">
+                        <span class="w-2 h-2 rounded-full bg-white"></span>
+                        <span data-i18n="catFull">1. 單字/句尾本調 (214)</span>
+                    </button>
+                    <button data-cat="half" class="cat-tab px-3.5 py-2 rounded-xl text-sm font-semibold transition flex items-center gap-2 bg-slate-100 text-slate-600 hover:bg-slate-200">
+                        <span class="w-2 h-2 rounded-full bg-amber-500"></span>
+                        <span data-i18n="catHalf">2. 半三聲變調 (21 + X)</span>
+                    </button>
+                    <button data-cat="sandhi" class="cat-tab px-3.5 py-2 rounded-xl text-sm font-semibold transition flex items-center gap-2 bg-slate-100 text-slate-600 hover:bg-slate-200">
+                        <span class="w-2 h-2 rounded-full bg-indigo-500"></span>
+                        <span data-i18n="catSandhi">3. 雙三聲連讀變調 (35 + 214)</span>
+                    </button>
+                </div>
+
+                <!-- 自訂輸入區 -->
+                <div class="flex items-center gap-2">
+                    <input type="text" id="customWordInput" placeholder="自訂詞語 (如: 買水)" maxlength="6" class="w-36 sm:w-44 px-3 py-1.5 text-sm border border-slate-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-teal-500">
+                    <button id="btnApplyCustom" class="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-white text-sm font-medium rounded-xl transition shrink-0" data-i18n="applyCustom">
+                        套用目標
+                    </button>
+                </div>
+            </div>
+
+            <!-- 詞庫快選膠囊與當前練習目標展示 -->
+            <div class="pt-4 flex flex-col md:flex-row md:items-center justify-between gap-4">
+                <div class="space-y-2">
+                    <div class="text-xs font-medium text-slate-500 uppercase tracking-wider" data-i18n="presetWordsLabel">選擇練習詞例（點擊切換）：</div>
+                    <div id="wordChipsContainer" class="flex flex-wrap gap-2">
+                        <!-- 由 JS 動態填充 -->
+                    </div>
+                </div>
+
+                <!-- 當前目標大字卡 -->
+                <div class="flex items-center gap-4 bg-slate-50 border border-slate-200/80 rounded-xl px-4 py-3 shrink-0">
+                    <div>
+                        <div class="text-xs text-slate-500" data-i18n="currentTargetLabel">當前檢測目標</div>
+                        <div class="flex items-baseline gap-2.5 mt-0.5">
+                            <span id="targetWordDisplay" class="text-2xl sm:text-3xl font-bold text-slate-900">好</span>
+                            <span id="targetPinyinDisplay" class="text-base font-mono font-semibold text-teal-700">hǎo</span>
+                        </div>
+                    </div>
+                    <div class="h-10 w-px bg-slate-200"></div>
+                    <div>
+                        <div class="text-xs text-slate-500" data-i18n="targetToneCodeLabel">標準五度調值</div>
+                        <div class="flex items-center gap-2 mt-0.5">
+                            <span id="targetToneDigits" class="text-xl font-mono font-bold text-emerald-600 bg-emerald-50 border border-emerald-200 px-2.5 py-0.5 rounded-lg">214</span>
+                            <button id="btnPlayTargetDemo" title="聆聽普通話標準真人語音發音" class="p-2 rounded-lg bg-teal-600 hover:bg-teal-700 text-white transition shadow-sm flex items-center gap-1 text-xs font-medium">
+                                <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM9.555 7.168A1 1 0 008 8v4a1 1 0 001.555.832l3-2a1 1 0 000-1.664l-3-2z" clip-rule="evenodd"></path></svg>
+                                <span data-i18n="listenStd">聽標準發音</span>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- 中部核心區：左側五度標記法畫布 + 右側普通話/粵語聲調對照圖鑑 -->
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+
+            <!-- 左側（7欄）：動態五度標記法音高軌跡畫布與錄音控制台 -->
+            <div class="lg:col-span-7 bg-white rounded-2xl border border-slate-200 shadow-sm p-4 sm:p-5 flex flex-col justify-between">
+                <div>
+                    <div class="flex flex-wrap items-center justify-between gap-2 mb-3">
+                        <div>
+                            <h2 class="text-base font-bold text-slate-900 flex items-center gap-2">
+                                <span data-i18n="pitchChartTitle">五度標記法即時音高軌跡圖</span>
+                                <span id="livePitchTag" class="hidden text-xs font-mono bg-rose-100 text-rose-700 px-2 py-0.5 rounded-full">0 Hz (0.0度)</span>
+                            </h2>
+                            <p class="text-xs text-slate-500" data-i18n="pitchChartDesc">對比普通話標準參考軌道（虛線）與您的實際發音基頻曲線（實線）</p>
+                        </div>
+                        <!-- 圖例說明 -->
+                        <div class="flex items-center gap-3 text-xs">
+                            <span class="flex items-center gap-1.5 text-slate-600">
+                                <span class="w-4 h-0.5 border-t-2 border-dashed border-emerald-600 inline-block"></span>
+                                <span data-i18n="legendStd">普通話標準</span>
+                            </span>
+                            <span class="flex items-center gap-1.5 text-slate-600">
+                                <span class="w-4 h-1 bg-rose-500 rounded-full inline-block"></span>
+                                <span data-i18n="legendUser">實測音高</span>
+                            </span>
+                            <span id="legendCantoWrap" class="hidden flex items-center gap-1.5 text-purple-700 font-medium">
+                                <span class="w-4 h-0.5 border-t-2 border-dotted border-purple-500 inline-block"></span>
+                                <span id="legendCantoText">粵語近似調</span>
+                            </span>
+                        </div>
+                    </div>
+
+                    <!-- 響應式 Canvas 容器 -->
+                    <div class="relative w-full h-72 sm:h-80 bg-slate-50/70 rounded-xl border border-slate-200 overflow-hidden" id="canvasContainer">
+                        <canvas id="pitchCanvas" class="w-full h-full block"></canvas>
+                        <!-- 錄音倒數/狀態浮層 -->
+                        <div id="recordingOverlay" class="hidden absolute top-3 right-3 bg-rose-600 text-white text-xs font-semibold px-3 py-1.5 rounded-full shadow flex items-center gap-2">
+                            <span class="w-2 h-2 rounded-full bg-white animate-ping"></span>
+                            <span id="recordingStatusText">正在聆聽發音...</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 錄音控制與典型偏誤模擬測試區 -->
+                <div class="mt-4 pt-4 border-t border-slate-100 space-y-3">
+                    <div class="flex flex-wrap items-center justify-between gap-3">
+                        <div class="flex items-center gap-2.5">
+                            <!-- 主錄音按鈕 -->
+                            <button id="btnRecord" class="px-5 py-2.5 rounded-xl bg-rose-600 hover:bg-rose-700 text-white font-semibold text-sm shadow-sm transition flex items-center gap-2">
+                                <svg id="micIcon" class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z"></path></svg>
+                                <span id="btnRecordText" data-i18n="startRecord">開始錄音檢測</span>
+                            </button>
+
+                            <!-- 重播自己錄音按鈕 -->
+                            <button id="btnPlayUserAudio" disabled class="px-3.5 py-2.5 rounded-xl border border-slate-300 bg-white hover:bg-slate-50 disabled:opacity-40 disabled:cursor-not-allowed text-slate-700 font-medium text-sm transition flex items-center gap-1.5">
+                                <svg class="w-4 h-4 text-slate-600" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM9.555 7.168A1 1 0 008 8v4a1 1 0 001.555.832l3-2a1 1 0 000-1.664l-3-2z" clip-rule="evenodd"></path></svg>
+                                <span data-i18n="replayUser">回放錄音</span>
+                            </button>
+                        </div>
+
+                        <!-- 音量即時指示條 -->
+                        <div class="flex items-center gap-2 flex-1 max-w-[180px]">
+                            <span class="text-[11px] text-slate-400 shrink-0" data-i18n="micLevel">音量</span>
+                            <div class="w-full h-2 bg-slate-200 rounded-full overflow-hidden">
+                                <div id="volumeBar" class="h-full bg-teal-500 w-0 transition-all duration-75"></div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 無麥克風/教學示範模擬器 -->
+                    <div class="bg-slate-50 rounded-xl p-2.5 border border-slate-200/70 flex flex-wrap items-center gap-2">
+                        <span class="text-xs font-semibold text-slate-600 flex items-center gap-1 mr-1">
+                            <svg class="w-3.5 h-3.5 text-amber-500" fill="currentColor" viewBox="0 0 20 20"><path d="M11 3a1 1 0 10-2 0v1a1 1 0 102 0V3zM15.657 5.757a1 1 0 00-1.414-1.414l-.707.707a1 1 0 001.414 1.414l.707-.707zM18 10a1 1 0 01-1 1h-1a1 1 0 110-2h1a1 1 0 011 1zM5.05 6.464A1 1 0 106.464 5.05l-.707-.707a1 1 0 00-1.414 1.414l.707.707zM5 10a1 1 0 01-1 1H3a1 1 0 110-2h1a1 1 0 011 1zM8 16v-1h4v1a2 2 0 11-4 0zM12 14c.015-.34.208-.646.477-.859a4 4 0 10-4.954 0c.27.213.462.519.476.859h4.002z"></path></svg>
+                            <span data-i18n="simLabel">典型發音模擬測試：</span>
+                        </span>
+                        <button data-sim="std" class="sim-btn text-xs px-2.5 py-1 rounded-lg bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border border-emerald-200 font-medium transition" data-i18n="simStd">✓ 標準示範</button>
+                        <button data-sim="canto5" class="sim-btn text-xs px-2.5 py-1 rounded-lg bg-purple-50 hover:bg-purple-100 text-purple-700 border border-purple-200 font-medium transition" data-i18n="simCanto5">誤用粵語第5聲 (13)</button>
+                        <button data-sim="canto4" class="sim-btn text-xs px-2.5 py-1 rounded-lg bg-purple-50 hover:bg-purple-100 text-purple-700 border border-purple-200 font-medium transition" data-i18n="simCanto4">誤用粵語第4聲 (21)</button>
+                        <button data-sim="canto6" class="sim-btn text-xs px-2.5 py-1 rounded-lg bg-purple-50 hover:bg-purple-100 text-purple-700 border border-purple-200 font-medium transition" data-i18n="simCanto6">半三聲讀成第6聲 (22)</button>
+                        <button data-sim="noSandhi" class="sim-btn text-xs px-2.5 py-1 rounded-lg bg-amber-50 hover:bg-amber-100 text-amber-700 border border-amber-200 font-medium transition" data-i18n="simNoSandhi">雙三聲未變調 (214+214)</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 右側（5欄）：普通話四聲 & 粵語六聲五度標記法互動圖鑑 -->
+            <div class="lg:col-span-5 bg-white rounded-2xl border border-slate-200 shadow-sm p-4 sm:p-5 flex flex-col justify-between space-y-4">
+                <!-- 普通話四聲參考圖 (對應圖一) -->
+                <div>
+                    <div class="flex items-center justify-between mb-2">
+                        <h3 class="text-sm font-bold text-slate-900 flex items-center gap-1.5">
+                            <span class="w-2.5 h-2.5 rounded-sm bg-teal-600 inline-block"></span>
+                            <span data-i18n="mandarinChartTitle">普通話四聲五度圖（圖一基準）</span>
+                        </h3>
+                        <span class="text-[11px] text-slate-400" data-i18n="clickToHear">點擊卡片試聽調型</span>
+                    </div>
+                    <div class="grid grid-cols-4 gap-2" id="mandarinRefGrid">
+                        <!-- 由 JS 渲染 SVG 小圖與試聽按鈕 -->
+                    </div>
+                </div>
+
+                <div class="border-t border-slate-100"></div>
+
+                <!-- 粵語六聲參考圖 (對應圖二) -->
+                <div>
+                    <div class="flex items-center justify-between mb-2">
+                        <h3 class="text-sm font-bold text-slate-900 flex items-center gap-1.5">
+                            <span class="w-2.5 h-2.5 rounded-sm bg-purple-600 inline-block"></span>
+                            <span data-i18n="cantoneseChartTitle">粵語六聲五度圖（圖二對照庫）</span>
+                        </h3>
+                        <span class="text-[11px] text-purple-600 font-medium" data-i18n="cantoInterferenceHint">母語負遷移高發區</span>
+                    </div>
+                    <div class="grid grid-cols-3 gap-2" id="cantoneseRefGrid">
+                        <!-- 由 JS 渲染粵語1-6聲 SVG 小圖與試聽 -->
+                    </div>
+                </div>
+
+                <!-- 粵普三聲對比核心口訣提示卡 -->
+                <div class="bg-gradient-to-r from-teal-50 to-purple-50 border border-teal-100 rounded-xl p-3 text-xs text-slate-700 space-y-1">
+                    <div class="font-bold text-teal-900" data-i18n="tipTitle">💡 粵語母語者攻克三聲核心技巧：</div>
+                    <p class="leading-relaxed" data-i18n="tipBody">
+                        • <strong>單念/句尾 (214)</strong>：切勿直接用粵語第5聲 (13/23) 往上滑！必須先由「次低 2」沉到底部「低 1」，再往上挑起。<br>
+                        • <strong>半三聲 (21)</strong>：在1、2、4聲前只降不升，調值等同<strong>粵語第4聲 (21，如「時/來」)</strong>，可直接借用！<br>
+                        • <strong>雙三聲 (35+214)</strong>：前字變為陽平 35，調值等同<strong>粵語第2聲 (35，如「史/九」)</strong>。
+                    </p>
+                </div>
+            </div>
+        </div>
+
+        <!-- 底部核心輸出：智能聲學與母語遷移診斷報告 -->
+        <section id="diagnosisSection" class="bg-white rounded-2xl border border-slate-200 shadow-sm p-5 transition-all">
+            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-slate-100 pb-3 mb-4">
+                <div class="flex items-center gap-2">
+                    <div class="w-8 h-8 rounded-lg bg-slate-900 text-white flex items-center justify-center">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path></svg>
+                    </div>
+                    <div>
+                        <h2 class="text-base font-bold text-slate-900" data-i18n="reportTitle">智能聲學與粵語負遷移診斷報告</h2>
+                        <p class="text-xs text-slate-500" data-i18n="reportSubtitle">基於錄音基頻（F0）五度歸一化算法與粵語六聲距離矩陣分析</p>
+                    </div>
+                </div>
+                <div id="overallVerdictBadge" class="inline-flex items-center px-3 py-1 rounded-full text-xs font-bold bg-slate-100 text-slate-600">
+                    等待錄音或模擬測試...
+                </div>
+            </div>
+
+            <!-- 三欄式診斷結果網格 -->
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <!-- 卡片 1：實測五度法位置與調值 -->
+                <div class="bg-slate-50 rounded-xl p-4 border border-slate-200/80 flex flex-col justify-between">
+                    <div>
+                        <div class="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2" data-i18n="card1Title">1. 錄音實測五度標記法位置</div>
+                        <div class="flex items-baseline gap-3 my-1">
+                            <span id="measuredCode" class="text-3xl font-mono font-extrabold text-slate-800">--</span>
+                            <span class="text-xs text-slate-500">vs 標準 <strong id="expectedCodeRef" class="text-emerald-700 font-mono">214</strong></span>
+                        </div>
+                        <div id="keyPointsDetail" class="mt-3 space-y-1.5 text-xs text-slate-600 bg-white p-2.5 rounded-lg border border-slate-200/60">
+                            <p class="text-slate-400 italic">請點擊「開始錄音檢測」或下方「典型發音模擬測試」查看詳細起點、轉折點與終點五度數值。</p>
+                        </div>
+                    </div>
+                    <div class="mt-3 pt-2 border-t border-slate-200/60 flex justify-between text-[11px] text-slate-500">
+                        <span id="f0RangeMeasured">實測基頻範圍: -- Hz</span>
+                        <span id="durationMeasured">有效濁音時長: -- ms</span>
+                    </div>
+                </div>
+
+                <!-- 卡片 2：普通話標準度判定與糾音建議 -->
+                <div id="mandarinEvalCard" class="bg-slate-50 rounded-xl p-4 border border-slate-200/80 flex flex-col justify-between">
+                    <div>
+                        <div class="flex items-center justify-between mb-2">
+                            <span class="text-xs font-semibold text-slate-500 uppercase tracking-wider" data-i18n="card2Title">2. 普通話聲調標準判定</span>
+                            <span id="mandarinScoreTag" class="text-xs font-bold px-2 py-0.5 rounded bg-slate-200 text-slate-600">-- 分</span>
+                        </div>
+                        <h3 id="mandarinEvalHeadline" class="text-base font-bold text-slate-800 mb-2">尚未進行語音檢測</h3>
+                        <p id="mandarinEvalAdvice" class="text-xs text-slate-600 leading-relaxed">
+                            系統將評估您的音高曲線是否符合普通話上聲（214）、半三聲（21）或連讀變調（35+214）的聲學特徵。
+                        </p>
+                    </div>
+                    <!-- 進度條 -->
+                    <div class="mt-3">
+                        <div class="w-full h-1.5 bg-slate-200 rounded-full overflow-hidden">
+                            <div id="mandarinScoreBar" class="h-full bg-teal-500 w-0 transition-all duration-500"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 卡片 3：粵語聲調相似性（負遷移檢測） -->
+                <div id="cantoneseMatchCard" class="bg-purple-50/40 rounded-xl p-4 border border-purple-200/80 flex flex-col justify-between">
+                    <div>
+                        <div class="flex items-center justify-between mb-2">
+                            <span class="text-xs font-semibold text-purple-800 uppercase tracking-wider" data-i18n="card3Title">3. 粵語六聲相似性檢測</span>
+                            <span id="cantoSimilarityTag" class="text-xs font-bold px-2 py-0.5 rounded bg-purple-100 text-purple-700">--% 相似</span>
+                        </div>
+                        <div id="cantoMatchHeadline" class="text-base font-bold text-purple-950 mb-1.5">
+                            待分析母語聲調遷移傾向
+                        </div>
+                        <p id="cantoMatchAnalysis" class="text-xs text-slate-700 leading-relaxed">
+                            系統將把您的發音軌跡與粵語第1至第6聲（55, 35, 33, 21, 13/23, 22）進行比對，判斷是否出現粵語聲調替換現象。
+                        </p>
+                    </div>
+                    <!-- Top 2 相似粵語聲調列表 -->
+                    <div id="cantoTopMatches" class="mt-3 pt-2 border-t border-purple-200/60 flex flex-wrap gap-1.5 text-[11px]">
+                        <span class="text-purple-400">粵語聲調匹配度排行將於檢測後顯示</span>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+    </main>
+
+    <!-- 個人音域校準彈窗 (Modal) -->
+    <div id="calibrateModal" class="hidden fixed inset-0 z-50 bg-slate-900/50 backdrop-blur-sm flex items-center justify-center p-4">
+        <div class="bg-white rounded-2xl max-w-md w-full p-6 shadow-xl border border-slate-200 space-y-4">
+            <div class="flex items-center justify-between border-b border-slate-100 pb-3">
+                <h3 class="text-lg font-bold text-slate-900" data-i18n="modalTitle">個人五度音域基準校準</h3>
+                <button id="btnCloseCalibrate" class="text-slate-400 hover:text-slate-600 p-1">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                </button>
+            </div>
+            <p class="text-xs text-slate-600 leading-relaxed" data-i18n="modalDesc">
+                五度標記法是相對音高。不同性別與年齡的基頻（F0）不同，設定您的自然最低音（1度）與最高音（5度），可使五度映射更精準。
+            </p>
+
+            <!-- 預設聲線快選 -->
+            <div class="grid grid-cols-3 gap-2">
+                <button data-preset="male" class="preset-voice-btn p-2.5 rounded-xl border border-slate-200 hover:border-teal-500 hover:bg-teal-50 text-center transition">
+                    <div class="text-xs font-bold text-slate-800">男聲標準</div>
+                    <div class="text-[11px] font-mono text-slate-500 mt-0.5">85 - 185 Hz</div>
+                </button>
+                <button data-preset="female" class="preset-voice-btn p-2.5 rounded-xl border border-teal-500 bg-teal-50 text-center transition">
+                    <div class="text-xs font-bold text-teal-900">女聲標準</div>
+                    <div class="text-[11px] font-mono text-teal-700 mt-0.5">150 - 300 Hz</div>
+                </button>
+                <button data-preset="auto" class="preset-voice-btn p-2.5 rounded-xl border border-slate-200 hover:border-teal-500 hover:bg-teal-50 text-center transition">
+                    <div class="text-xs font-bold text-slate-800">通用/自適應</div>
+                    <div class="text-[11px] font-mono text-slate-500 mt-0.5">動態對齊音域</div>
+                </button>
+            </div>
+
+            <!-- 手動滑桿調整 -->
+            <div class="space-y-3 pt-2">
+                <div>
+                    <div class="flex justify-between text-xs font-medium text-slate-700 mb-1">
+                        <span>1度（最低音底線）</span>
+                        <span id="minHzLabel" class="font-mono text-teal-700 font-bold">110 Hz</span>
+                    </div>
+                    <input type="range" id="minHzSlider" min="65" max="200" value="110" class="w-full accent-teal-600">
+                </div>
+                <div>
+                    <div class="flex justify-between text-xs font-medium text-slate-700 mb-1">
+                        <span>5度（最高音上限）</span>
+                        <span id="maxHzLabel" class="font-mono text-teal-700 font-bold">260 Hz</span>
+                    </div>
+                    <input type="range" id="maxHzSlider" min="160" max="420" value="260" class="w-full accent-teal-600">
+                </div>
+            </div>
+
+            <!-- 即時測音校準按鈕 -->
+            <div class="bg-slate-50 p-3 rounded-xl border border-slate-200 flex items-center justify-between gap-2">
+                <div class="text-xs text-slate-600">
+                    <span class="font-semibold text-slate-800">語音自動測算：</span>點擊後用自然高音到低音說「衣—啊—」2秒。
+                </div>
+                <button id="btnAutoMeasureRange" class="px-3 py-1.5 bg-teal-600 hover:bg-teal-700 text-white text-xs font-semibold rounded-lg shrink-0 transition">
+                    測音校準
+                </button>
+            </div>
+
+            <div class="flex justify-end gap-2 pt-2">
+                <button id="btnSaveCalibrate" class="px-4 py-2 bg-slate-900 hover:bg-slate-800 text-white text-xs font-semibold rounded-xl transition">
+                    確認儲存設定
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        /**
+         * ============================================================================
+         * 1. 核心語言學數據庫：普通話四聲、變調規則、粵語六聲五度模型與詞庫
+         * ============================================================================
+         */
+        const MANDARIN_TONES = [
+            { id: 'm1', name: '陰平 (第1聲)', code: '55', desc: '高平調', points: [5.0, 5.0, 5.0, 5.0, 5.0], color: '#0d9488' },
+            { id: 'm2', name: '陽平 (第2聲)', code: '35', desc: '中升調', points: [3.0, 3.4, 4.0, 4.5, 5.0], color: '#0284c7' },
+            { id: 'm3', name: '上聲 (第3聲)', code: '214', desc: '低降升調', points: [2.1, 1.3, 1.0, 2.5, 4.0], color: '#059669' },
+            { id: 'm4', name: '去聲 (第4聲)', code: '51', desc: '全降調', points: [5.0, 4.0, 3.0, 2.0, 1.0], color: '#d97706' }
+        ];
+
+        const CANTONESE_TONES = [
+            { id: 'c1', num: 1, name: '第1聲 陰平', code: '55', example: '詩 / 夫', points: [5.0, 5.0, 5.0, 5.0, 5.0] },
+            { id: 'c2', num: 2, name: '第2聲 陰上', code: '35', example: '史 / 苦', points: [3.0, 3.3, 3.8, 4.4, 5.0] },
+            { id: 'c3', num: 3, name: '第3聲 陰去', code: '33', example: '試 / 富', points: [3.0, 3.0, 3.0, 3.0, 3.0] },
+            { id: 'c4', num: 4, name: '第4聲 陽平', code: '21', example: '時 / 扶', points: [2.1, 1.8, 1.5, 1.2, 1.0] },
+            { id: 'c5', num: 5, name: '第5聲 陽上', code: '13/23', example: '市 / 婦', points: [1.5, 1.6, 2.0, 2.5, 3.0] },
+            { id: 'c6', num: 6, name: '第6聲 陽去', code: '22', example: '事 / 父', points: [2.0, 2.0, 2.0, 2.0, 2.0] }
+        ];
+
+        // 練習詞庫（包含三大類型與精確目標曲線）
+        const WORD_BANK = {
+            full: [
+                { word: '好', pinyin: 'hǎo', code: '214', syllables: 1, targetCurve: [2.1, 1.5, 1.0, 1.8, 2.9, 4.0], note: '單念或句尾上聲：由2度降至1度底部，再升至4度。' },
+                { word: '水', pinyin: 'shuǐ', code: '214', syllables: 1, targetCurve: [2.1, 1.5, 1.0, 1.8, 2.9, 4.0], note: '單念完整上聲：注意最低點必須下沉到1度。' },
+                { word: '我', pinyin: 'wǒ', code: '214', syllables: 1, targetCurve: [2.1, 1.5, 1.0, 1.8, 2.9, 4.0], note: '粵語「我」(ngo5) 為陽上 13/23，說普通話「我」需先降後升。' },
+                { word: '買', pinyin: 'mǎi', code: '214', syllables: 1, targetCurve: [2.1, 1.5, 1.0, 1.8, 2.9, 4.0], note: '切忌直接讀成粵語第5聲「買」(maai5, 13)。' },
+                { word: '想', pinyin: 'xiǎng', code: '214', syllables: 1, targetCurve: [2.1, 1.5, 1.0, 1.8, 2.9, 4.0], note: '完整曲折調 214，後半段需升至次高 4 度。' }
+            ],
+            half: [
+                { word: '老師', pinyin: 'lǎoshī', code: '21 + 55', syllables: 2, targetCurve: [2.1, 1.5, 1.0, null, 5.0, 5.0, 5.0], note: '半三聲接陰平：「老」只降不升(21)，隨即跳高接「師」(55)。' },
+                { word: '美國', pinyin: 'Měiguó', code: '21 + 35', syllables: 2, targetCurve: [2.1, 1.5, 1.0, null, 3.0, 4.0, 5.0], note: '半三聲接陽平：「美」壓低至1度(21)，再由3度升至5度「國」。' },
+                { word: '好看', pinyin: 'hǎokàn', code: '21 + 51', syllables: 2, targetCurve: [2.1, 1.5, 1.0, null, 5.0, 3.0, 1.0], note: '半三聲接去聲：「好」讀21低降調，切勿上揚，再接「看」(51)。' },
+                { word: '喜歡', pinyin: 'xǐhuan', code: '21 + 3(輕)', syllables: 2, targetCurve: [2.1, 1.5, 1.0, null, 3.2, 3.0, 2.8], note: '半三聲接多數輕聲：「喜」讀21，後字「歡」輕短中平。' }
+            ],
+            sandhi: [
+                { word: '你好', pinyin: 'nǐhǎo', code: '35 + 214', syllables: 2, targetCurve: [3.0, 3.9, 4.9, null, 2.1, 1.0, 2.5, 4.0], note: '雙三聲連讀變調：前字「你」變為陽平 35（似粵語第2聲），後字「好」保持 214。' },
+                { word: '水果', pinyin: 'shuǐguǒ', code: '35 + 214', syllables: 2, targetCurve: [3.0, 3.9, 4.9, null, 2.1, 1.0, 2.5, 4.0], note: '「水」由214變讀為 35 陽平調，「果」完整讀出 214。' },
+                { word: '可以', pinyin: 'kěyǐ', code: '35 + 214', syllables: 2, targetCurve: [3.0, 3.9, 4.9, null, 2.1, 1.0, 2.5, 4.0], note: '「可」變調為 35 升調，避免兩個 214 連讀造成語流拖沓。' },
+                { word: '手錶', pinyin: 'shǒubiǎo', code: '35 + 214', syllables: 2, targetCurve: [3.0, 3.9, 4.9, null, 2.1, 1.0, 2.5, 4.0], note: '「手」借用粵語第2聲(35)的升調感覺，「錶」沉底再上揚(214)。' }
+            ]
+        };
+
+        /**
+         * ============================================================================
+         * 2. 應用全局狀態管理
+         * ============================================================================
+         */
+        const state = {
+            lang: 'zh-Hant', // 'zh-Hant' | 'zh-Hans'
+            category: 'full', // 'full' | 'half' | 'sandhi'
+            currentItem: WORD_BANK.full[0],
+            minHz: 110,       // 1度基準頻率 (Hz)
+            maxHz: 260,       // 5度基準頻率 (Hz)
+            autoAdaptRange: true, // 是否啟用自適應相對音域校準（防止女聲/高音域者起始音高全偏高至4度）
+            isRecording: false,
+            userPitchCurve: [], // 歸一化後的五度值陣列 (1.0 ~ 5.0)
+            userRawF0: [],      // 原始 Hz 陣列
+            matchedCantoTone: null, // 最相似的粵語聲調物件
+            audioBlobUrl: null,
+            audioCtx: null,
+            noiseFloorRms: 0.018 // 動態環境底噪門檻基準
+        };
+
+        /**
+         * ============================================================================
+         * 3. 繁簡轉換字典與 UI 本地化
+         * ============================================================================
+         */
+        const I18N_MAP = {
+            'zh-Hant': {
+                appTitle: '普通話三聲（上聲）與變調語音檢測工具',
+                appSubtitle: '基於五度標記法與粵語六聲母語負遷移聲學對照系統',
+                calibrateBtn: '音域校準',
+                catFull: '1. 單字/句尾本調 (214)',
+                catHalf: '2. 半三聲變調 (21 + X)',
+                catSandhi: '3. 雙三聲連讀變調 (35 + 214)',
+                applyCustom: '套用目標',
+                presetWordsLabel: '選擇練習詞例（點擊切換）：',
+                currentTargetLabel: '當前檢測目標',
+                targetToneCodeLabel: '標準五度調值',
+                listenStd: '聽標準發音',
+                pitchChartTitle: '五度標記法即時音高軌跡圖',
+                pitchChartDesc: '對比普通話標準參考軌道（虛線）與您的實際發音基頻曲線（實線）',
+                legendStd: '普通話標準',
+                legendUser: '實測音高',
+                startRecord: '開始錄音檢測',
+                stopRecord: '停止並分析',
+                replayUser: '回放錄音',
+                micLevel: '音量',
+                simLabel: '典型發音模擬測試：',
+                simStd: '✓ 標準示範',
+                simCanto5: '誤用粵語第5聲 (13)',
+                simCanto4: '誤用粵語第4聲 (21)',
+                simCanto6: '半三聲讀成第6聲 (22)',
+                simNoSandhi: '雙三聲未變調 (214+214)',
+                mandarinChartTitle: '普通話四聲五度圖（圖一基準）',
+                clickToHear: '點擊卡片試聽調型',
+                cantoneseChartTitle: '粵語六聲五度圖（圖二對照庫）',
+                cantoInterferenceHint: '母語負遷移高發區',
+                tipTitle: '💡 粵語母語者攻克三聲核心技巧：',
+                tipBody: '• <strong>單念/句尾 (214)</strong>：切勿直接用粵語第5聲 (13/23) 往上滑！必須先由「次低 2」沉到底部「低 1」，再往上挑起。<br>• <strong>半三聲 (21)</strong>：在1、2、4聲前只降不升，調值等同<strong>粵語第4聲 (21，如「時/來」)</strong>，可直接借用！<br>• <strong>雙三聲 (35+214)</strong>：前字變為陽平 35，調值等同<strong>粵語第2聲 (35，如「史/九」)</strong>。',
+                reportTitle: '智能聲學與粵語負遷移診斷報告',
+                reportSubtitle: '基於錄音基頻（F0）五度歸一化算法與粵語六聲距離矩陣分析',
+                card1Title: '1. 錄音實測五度標記法位置',
+                card2Title: '2. 普通話聲調標準判定',
+                card3Title: '3. 粵語六聲相似性檢測',
+                modalTitle: '個人五度音域基準校準',
+                modalDesc: '五度標記法是相對音高。不同性別與年齡的基頻（F0）不同，設定您的自然最低音（1度）與最高音（5度），可使五度映射更精準。'
+            },
+            'zh-Hans': {
+                appTitle: '普通话三声（上声）与变调语音检测工具',
+                appSubtitle: '基于五度标记法与粤语六声母语负迁移声学对照系统',
+                calibrateBtn: '音域校准',
+                catFull: '1. 单字/句尾本调 (214)',
+                catHalf: '2. 半三声变调 (21 + X)',
+                catSandhi: '3. 双三声连读变调 (35 + 214)',
+                applyCustom: '套用目标',
+                presetWordsLabel: '选择练习词例（点击切换）：',
+                currentTargetLabel: '当前检测目标',
+                targetToneCodeLabel: '标准五度调值',
+                listenStd: '听标准发音',
+                pitchChartTitle: '五度标记法实时音高轨迹图',
+                pitchChartDesc: '对比普通话标准参考轨道（虚线）与您的实际发音基频曲线（实线）',
+                legendStd: '普通话标准',
+                legendUser: '实测音高',
+                startRecord: '开始录音检测',
+                stopRecord: '停止并分析',
+                replayUser: '回放录音',
+                micLevel: '音量',
+                simLabel: '典型发音模拟测试：',
+                simStd: '✓ 标准示范',
+                simCanto5: '误用粤语第5声 (13)',
+                simCanto4: '误用粤语第4声 (21)',
+                simCanto6: '半三声读成第6声 (22)',
+                simNoSandhi: '双三声未变调 (214+214)',
+                mandarinChartTitle: '普通话四声五度图（图一基准）',
+                clickToHear: '点击卡片试听调型',
+                cantoneseChartTitle: '粤语六声五度图（图二对照库）',
+                cantoInterferenceHint: '母语负迁移高发区',
+                tipTitle: '💡 粤语母语者攻克三声核心技巧：',
+                tipBody: '• <strong>单念/句尾 (214)</strong>：切勿直接用粤语第5声 (13/23) 往上滑！必须先由「次低 2」沉到底部「低 1」，再往上挑起。<br>• <strong>半三声 (21)</strong>：在1、2、4声前只降不升，调值等同<strong>粤语第4声 (21，如「时/来」)</strong>，可直接借用！<br>• <strong>双三声 (35+214)</strong>：前字变为阳平 35，调值等同<strong>粤语第2声 (35，如「史/九」)</strong>。',
+                reportTitle: '智能声学与粤语负迁移诊断报告',
+                reportSubtitle: '基于录音基频（F0）五度归一化算法与粤语六声距离矩阵分析',
+                card1Title: '1. 录音实测五度标记法位置',
+                card2Title: '2. 普通话声调标准判定',
+                card3Title: '3. 粤语六声相似性检测',
+                modalTitle: '个人五度音域基准校准',
+                modalDesc: '五度标记法是相对音高。不同性别与年龄的基频（F0）不同，设定您的自然最低音（1度）与最高音（5度），可使五度映射更精准。'
+            }
+        };
+
+        // 簡易繁轉簡字符對照（用於動態生成的診斷報告）
+        const T2S_CHARS = {'語':'语','音':'音','檢測':'检测','標準':'标准','調':'调','聲':'声','變':'变','粵':'粤','實':'实','測':'测','點':'点','最低':'最低','起點':'起点','終點':'终点','轉折':'转折','高':'高','低':'低','降':'降','升':'升','平':'平','相似':'相似','度':'度','誤':'误','讀':'读','為':'为','應':'应','該':'该','先':'先','後':'后','沉':'沉','底':'底','挑':'挑','起':'起','借':'借','用':'用','連':'连','單':'单','字':'字','詞':'词','與':'与','對':'对','比':'比','優':'优','秀':'秀','符':'符','合':'合','基':'基','本':'本','達':'达','標':'标','存':'存','在':'在','偏':'偏','警':'警','告':'告','示':'示','范':'范','錄':'录','範':'范','圍':'围','時':'时','長':'长','無':'无','法':'法','識':'识','別':'别','請':'请','靠':'靠','近':'近','麥':'麦','克':'克','風':'风','清':'清','晰':'晰','發':'发','老':'老','師':'师','美':'美','國':'国','看':'看','喜':'喜','歡':'欢','你':'你','好':'好','水':'水','果':'果','可':'可','以':'以','手':'手','錶':'表','買':'买','想':'想','我':'我','陰':'阴','陽':'阳','上':'上','去':'去','婦':'妇','市':'市','來':'来','史':'史','苦':'苦','試':'试','富':'富','扶':'扶','事':'事','父':'父','詩':'诗','夫':'夫'};
+        function localizeText(str) {
+            if (state.lang === 'zh-Hant') return str;
+            let res = str;
+            for (const [trad, simp] of Object.entries(T2S_CHARS)) {
+                res = res.split(trad).join(simp);
+            }
+            return res;
+        }
+
+        /**
+         * ============================================================================
+         * 4. 通知提示工具 (取代 alert)
+         * ============================================================================
+         */
+        function showToast(msg, type = 'info') {
+            const container = document.getElementById('toastContainer');
+            const toast = document.createElement('div');
+            const colors = {
+                info: 'bg-slate-800 text-white border-slate-700',
+                success: 'bg-emerald-700 text-white border-emerald-600',
+                warning: 'bg-amber-600 text-white border-amber-500',
+                error: 'bg-rose-700 text-white border-rose-600'
+            };
+            toast.className = `pointer-events-auto px-4 py-3 rounded-xl shadow-lg border text-xs sm:text-sm font-medium flex items-center justify-between gap-3 transition-all duration-300 transform translate-y-2 opacity-0 ${colors[type] || colors.info}`;
+            toast.innerHTML = `<span>${localizeText(msg)}</span>`;
+            container.appendChild(toast);
+            requestAnimationFrame(() => {
+                toast.classList.remove('translate-y-2', 'opacity-0');
+            });
+            setTimeout(() => {
+                toast.classList.add('opacity-0', 'translate-y-2');
+                setTimeout(() => toast.remove(), 300);
+            }, 3400);
+        }
+
+        /**
+         * ============================================================================
+         * 5. Web Audio API 音訊上下文與五度標記法頻率換算工具
+         * ============================================================================
+         */
+        function getAudioContext() {
+            if (!state.audioCtx) {
+                const AudioCtx = window.AudioContext || window.webkitAudioContext;
+                state.audioCtx = new AudioCtx();
+            }
+            if (state.audioCtx.state === 'suspended') {
+                state.audioCtx.resume();
+            }
+            return state.audioCtx;
+        }
+
+        // 對數半音五度標記法映射 (1.0 ~ 5.0 度)
+        function hzToDegree(hz) {
+            if (!hz || hz <= 0) return 1.0;
+            const minLog = Math.log2(state.minHz);
+            const maxLog = Math.log2(state.maxHz);
+            const valLog = Math.log2(hz);
+            const ratio = (valLog - minLog) / Math.max(0.01, maxLog - minLog);
+            const deg = 1.0 + ratio * 4.0;
+            return Math.max(1.0, Math.min(5.0, deg));
+        }
+
+        function degreeToHz(deg) {
+            const clamped = Math.max(1.0, Math.min(5.0, deg));
+            const ratio = (clamped - 1.0) / 4.0;
+            const minLog = Math.log2(state.minHz);
+            const maxLog = Math.log2(state.maxHz);
+            return Math.pow(2, minLog + ratio * (maxLog - minLog));
+        }
+
+        // 過濾八度倍頻跳變誤差
+        function removeOctaveErrors(hzArr) {
+            if (hzArr.length < 3) return hzArr;
+            const sorted = [...hzArr].sort((a, b) => a - b);
+            const median = sorted[Math.floor(sorted.length / 2)];
+            return hzArr.map(hz => {
+                if (hz > median * 1.75) return hz / 2;
+                if (hz < median * 0.58) return hz * 2;
+                return hz;
+            });
+        }
+
+        // 三點移動平均平滑濾波器
+        function smoothArray(arr) {
+            if (arr.length < 3) return arr;
+            const out = [arr[0]];
+            for (let i = 1; i < arr.length - 1; i++) {
+                out.push((arr[i - 1] + arr[i] * 2 + arr[i + 1]) / 4);
+            }
+            out.push(arr[arr.length - 1]);
+            return out;
+        }
+
+        // 更新錄音按鈕與介面狀態
+        function updateRecordUI(recording) {
+            const btn = document.getElementById('btnRecord');
+            const btnText = document.getElementById('btnRecordText');
+            const overlay = document.getElementById('recordingOverlay');
+            const liveTag = document.getElementById('livePitchTag');
+
+            if (recording) {
+                btn.classList.add('recording-pulse', 'bg-slate-900', 'hover:bg-slate-800');
+                btn.classList.remove('bg-rose-600', 'hover:bg-rose-700');
+                btnText.textContent = I18N_MAP[state.lang].stopRecord;
+                overlay.classList.remove('hidden');
+            } else {
+                btn.classList.remove('recording-pulse', 'bg-slate-900', 'hover:bg-slate-800');
+                btn.classList.add('bg-rose-600', 'hover:bg-rose-700');
+                btnText.textContent = I18N_MAP[state.lang].startRecord;
+                overlay.classList.add('hidden');
+                liveTag.classList.add('hidden');
+            }
+        }
+
+        // 播放普通話標準發音（優先調用 Web Speech API 普通話語音包，若環境不支援則降級為五度音高模擬）
+        function playStandardPronunciation(wordText, fallbackCurve) {
+            if ('speechSynthesis' in window && wordText) {
+                try {
+                    window.speechSynthesis.cancel();
+                    const utterance = new SpeechSynthesisUtterance(wordText);
+                    utterance.lang = 'zh-CN';
+                    utterance.rate = 0.85; // 略微放慢語速以清晰展現三聲與變調折線
+                    utterance.pitch = 1.0;
+
+                    // 優先篩選普通話 (zh-CN / cmn) 語音包，避免誤用粵語 (zh-HK) 朗讀
+                    const voices = window.speechSynthesis.getVoices();
+                    const mandarinVoice = voices.find(v =>
+                        (v.lang === 'zh-CN' || v.lang === 'cmn-Hans-CN' || v.lang.toLowerCase().includes('zh-cn')) &&
+                        !v.name.toLowerCase().includes('cantonese') &&
+                        !v.name.includes('粵')
+                    ) || voices.find(v => v.lang.startsWith('zh') && !v.lang.includes('HK') && !v.lang.includes('MO'));
+
+                    if (mandarinVoice) {
+                        utterance.voice = mandarinVoice;
+                    }
+
+                    utterance.onerror = () => {
+                        playToneCurve(fallbackCurve, 0.8);
+                    };
+
+                    window.speechSynthesis.speak(utterance);
+                    return;
+                } catch (err) {
+                    console.warn('SpeechSynthesis fallback to tone curve:', err);
+                }
+            }
+            playToneCurve(fallbackCurve, 0.8);
+        }
+
+        // 播放五度曲線示範音（支援單字與雙字停頓）
+        function playToneCurve(points, totalDuration = 0.75) {
+            try {
+                const ctx = getAudioContext();
+                const now = ctx.currentTime;
+                const osc = ctx.createOscillator();
+                const gain = ctx.createGain();
+
+                // 使用三角波+低通濾波模擬溫潤人聲基頻
+                osc.type = 'triangle';
+                const filter = ctx.createBiquadFilter();
+                filter.type = 'lowpass';
+                filter.frequency.value = 650;
+
+                osc.connect(filter);
+                filter.connect(gain);
+                gain.connect(ctx.destination);
+
+                // 檢查是否有音節間隔 (null)
+                const splitIdx = points.indexOf(null);
+                if (splitIdx === -1) {
+                    // 單音節連續滑動
+                    const validPts = points.filter(p => p !== null);
+                    const step = totalDuration / (validPts.length - 1);
+                    gain.gain.setValueAtTime(0.001, now);
+                    gain.gain.linearRampToValueAtTime(0.28, now + 0.04);
+                    gain.gain.setValueAtTime(0.28, now + totalDuration - 0.06);
+                    gain.gain.exponentialRampToValueAtTime(0.001, now + totalDuration);
+
+                    osc.frequency.setValueAtTime(degreeToHz(validPts[0]), now);
+                    for (let i = 1; i < validPts.length; i++) {
+                        osc.frequency.linearRampToValueAtTime(degreeToHz(validPts[i]), now + i * step);
+                    }
+                    osc.start(now);
+                    osc.stop(now + totalDuration + 0.02);
+                } else {
+                    // 雙音節詞組（包含短暫氣流間隙）
+                    const part1 = points.slice(0, splitIdx);
+                    const part2 = points.slice(splitIdx + 1);
+                    const dur1 = 0.42;
+                    const gap = 0.07;
+                    const dur2 = 0.55;
+                    const total = dur1 + gap + dur2;
+
+                    gain.gain.setValueAtTime(0.001, now);
+                    // 第一字包絡
+                    gain.gain.linearRampToValueAtTime(0.28, now + 0.03);
+                    gain.gain.setValueAtTime(0.28, now + dur1 - 0.04);
+                    gain.gain.linearRampToValueAtTime(0.005, now + dur1);
+                    // 第二字包絡
+                    gain.gain.setValueAtTime(0.005, now + dur1 + gap);
+                    gain.gain.linearRampToValueAtTime(0.28, now + dur1 + gap + 0.03);
+                    gain.gain.setValueAtTime(0.28, now + total - 0.05);
+                    gain.gain.exponentialRampToValueAtTime(0.001, now + total);
+
+                    // 第一字頻率
+                    const step1 = dur1 / Math.max(1, part1.length - 1);
+                    osc.frequency.setValueAtTime(degreeToHz(part1[0]), now);
+                    for (let i = 1; i < part1.length; i++) {
+                        osc.frequency.linearRampToValueAtTime(degreeToHz(part1[i]), now + i * step1);
+                    }
+
+                    // 第二字頻率
+                    const start2 = now + dur1 + gap;
+                    const step2 = dur2 / Math.max(1, part2.length - 1);
+                    osc.frequency.setValueAtTime(degreeToHz(part2[0]), start2);
+                    for (let i = 1; i < part2.length; i++) {
+                        osc.frequency.linearRampToValueAtTime(degreeToHz(part2[i]), start2 + i * step2);
+                    }
+
+                    osc.start(now);
+                    osc.stop(now + total + 0.02);
+                }
+            } catch (e) {
+                console.error('Audio synthesis error:', e);
+            }
+        }
+
+        /**
+         * ============================================================================
+         * 6. 渲染普通話四聲 & 粵語六聲五度標記法互動圖鑑 (SVG)
+         * ============================================================================
+         */
+        function createMiniToneSVG(points, strokeColor, isCantonese = false) {
+            const w = 80, h = 56;
+            const padX = 12, padY = 8;
+            const usableW = w - padX * 2;
+            const usableH = h - padY * 2;
+
+            // 繪製 1-5 度水平參考線
+            let gridLines = '';
+            for (let d = 1; d <= 5; d++) {
+                const y = padY + ((5 - d) / 4) * usableH;
+                gridLines += `<line x1="${padX}" y1="${y}" x2="${w - padX}" y2="${y}" stroke="#cbd5e1" stroke-width="1" />`;
+            }
+
+            // 繪製聲調曲線與箭頭
+            const coords = points.map((p, idx) => {
+                const x = padX + (idx / (points.length - 1)) * usableW;
+                const y = padY + ((5 - p) / 4) * usableH;
+                return `${x.toFixed(1)},${y.toFixed(1)}`;
+            });
+
+            const lastPt = coords[coords.length - 1].split(',');
+            return `
+                <svg viewBox="0 0 ${w} ${h}" class="w-full h-12 overflow-visible">
+                    ${gridLines}
+                    <polyline fill="none" stroke="${strokeColor}" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" points="${coords.join(' ')}" />
+                    <circle cx="${lastPt[0]}" cy="${lastPt[1]}" r="3" fill="${strokeColor}" />
+                </svg>
+            `;
+        }
+
+        function renderReferenceCharts() {
+            // 普通話四聲
+            const mGrid = document.getElementById('mandarinRefGrid');
+            mGrid.innerHTML = MANDARIN_TONES.map(t => `
+                <button onclick="playToneCurve([${t.points.join(',')}], 0.65)" class="group p-2 rounded-xl border border-slate-200 hover:border-teal-500 hover:bg-teal-50/50 transition text-left flex flex-col justify-between bg-slate-50/40">
+                    <div class="flex items-center justify-between w-full">
+                        <span class="text-[11px] font-bold text-slate-800 group-hover:text-teal-700">${localizeText(t.name.split(' ')[0])}</span>
+                        <span class="text-[11px] font-mono font-bold text-teal-700 bg-teal-100/70 px-1 rounded">${t.code}</span>
+                    </div>
+                    ${createMiniToneSVG(t.points, t.color, false)}
+                    <div class="text-[10px] text-slate-500 flex items-center justify-between">
+                        <span>${localizeText(t.desc)}</span>
+                        <span class="text-teal-600 opacity-0 group-hover:opacity-100 transition">▶</span>
+                    </div>
+                </button>
+            `).join('');
+
+            // 粵語六聲
+            const cGrid = document.getElementById('cantoneseRefGrid');
+            cGrid.innerHTML = CANTONESE_TONES.map(t => `
+                <button onclick="playToneCurve([${t.points.join(',')}], 0.65)" class="group p-2 rounded-xl border border-slate-200 hover:border-purple-500 hover:bg-purple-50/50 transition text-left flex flex-col justify-between bg-slate-50/40">
+                    <div class="flex items-center justify-between w-full">
+                        <span class="text-[11px] font-bold text-slate-800 group-hover:text-purple-800">${localizeText(t.name)}</span>
+                        <span class="text-[11px] font-mono font-bold text-purple-700 bg-purple-100 px-1 rounded">${t.code}</span>
+                    </div>
+                    ${createMiniToneSVG(t.points, '#9333ea', true)}
+                    <div class="text-[10px] text-slate-500 flex items-center justify-between">
+                        <span>${localizeText(t.example)}</span>
+                        <span class="text-purple-600 opacity-0 group-hover:opacity-100 transition">▶</span>
+                    </div>
+                </button>
+            `).join('');
+        }
+
+        /**
+         * ============================================================================
+         * 7. 動態五度標記法主畫布繪製引擎 (Canvas)
+         * ============================================================================
+         */
+        const canvas = document.getElementById('pitchCanvas');
+        const ctx = canvas.getContext('2d');
+
+        function resizeCanvas() {
+            const container = document.getElementById('canvasContainer');
+            const dpr = window.devicePixelRatio || 1;
+            const rect = container.getBoundingClientRect();
+            canvas.width = rect.width * dpr;
+            canvas.height = rect.height * dpr;
+            ctx.scale(dpr, dpr);
+            drawPitchChart();
+        }
+
+        function drawPitchChart() {
+            const container = document.getElementById('canvasContainer');
+            const w = container.getBoundingClientRect().width;
+            const h = container.getBoundingClientRect().height;
+
+            ctx.clearRect(0, 0, w, h);
+
+            const padLeft = 56;
+            const padRight = 48;
+            const padTop = 26;
+            const padBottom = 30;
+            const chartW = w - padLeft - padRight;
+            const chartH = h - padTop - padBottom;
+
+            const degreeLabelsLeft = ['5 高', '4 次高', '3 中', '2 次低', '1 低'];
+            const degToY = (deg) => padTop + ((5.0 - deg) / 4.0) * chartH;
+
+            // 1. 繪製背景網格與五度標尺 (1 - 5 度)
+            ctx.lineWidth = 1;
+            ctx.font = '12px "Noto Sans TC", Inter, sans-serif';
+
+            for (let i = 0; i < 5; i++) {
+                const deg = 5 - i;
+                const y = degToY(deg);
+
+                // 水平線
+                ctx.beginPath();
+                ctx.strokeStyle = deg === 1 || deg === 5 ? '#94a3b8' : '#e2e8f0';
+                ctx.setLineDash(deg === 1 || deg === 5 ? [] : [4, 4]);
+                ctx.moveTo(padLeft, y);
+                ctx.lineTo(w - padRight, y);
+                ctx.stroke();
+
+                // 左側文字標籤
+                ctx.fillStyle = '#475569';
+                ctx.textAlign = 'right';
+                ctx.textBaseline = 'middle';
+                ctx.fillText(localizeText(degreeLabelsLeft[i]), padLeft - 10, y);
+
+                // 右側數字標尺 (呼應圖一右側 1-5 標記)
+                ctx.fillStyle = '#0f172a';
+                ctx.font = 'bold 12px monospace';
+                ctx.textAlign = 'left';
+                ctx.fillText(String(deg), w - padRight + 12, y);
+                ctx.font = '12px "Noto Sans TC", Inter, sans-serif';
+            }
+
+            // 右側垂直基準軸線（呼應圖一右側音高軸）
+            ctx.beginPath();
+            ctx.setLineDash([]);
+            ctx.strokeStyle = '#64748b';
+            ctx.lineWidth = 1.5;
+            ctx.moveTo(w - padRight, padTop);
+            ctx.lineTo(w - padRight, padTop + chartH);
+            ctx.stroke();
+
+            // 底部音長軸標籤
+            ctx.fillStyle = '#94a3b8';
+            ctx.font = '11px "Noto Sans TC", sans-serif';
+            ctx.textAlign = 'center';
+            ctx.fillText(localizeText('← 音 長 (時間進程) →'), padLeft + chartW / 2, h - 10);
+
+            // 2. 繪製普通話標準目標軌道（綠色粗虛線）
+            const target = state.currentItem.targetCurve;
+            if (target && target.length > 0) {
+                drawSmoothCurveOnCanvas(target, padLeft, chartW, degToY, {
+                    strokeStyle: '#059669',
+                    lineWidth: 3.5,
+                    dash: [8, 6],
+                    drawNodes: true,
+                    label: `${localizeText('標準')} (${state.currentItem.code})`
+                });
+            }
+
+            // 3. 若有檢測出最相似的粵語聲調，繪製紫色點線對照軌跡（針對首字/單字區間）
+            if (state.matchedCantoTone && state.userPitchCurve.length > 0) {
+                const cantoPts = state.matchedCantoTone.points;
+                // 若為雙音節，粵語對照線繪製在前半段（易發生首字變調負遷移區）或全段
+                const subW = state.currentItem.syllables === 2 ? chartW * 0.45 : chartW;
+                drawSmoothCurveOnCanvas(cantoPts, padLeft, subW, degToY, {
+                    strokeStyle: '#9333ea',
+                    lineWidth: 2.5,
+                    dash: [3, 4],
+                    drawNodes: false,
+                    label: `${localizeText(state.matchedCantoTone.name)} (${state.matchedCantoTone.code})`
+                });
+            }
+
+            // 4. 繪製用戶實測五度音高曲線（珊瑚紅實線）
+            if (state.userPitchCurve && state.userPitchCurve.length > 1) {
+                drawSmoothCurveOnCanvas(state.userPitchCurve, padLeft, chartW, degToY, {
+                    strokeStyle: '#f43f5e',
+                    lineWidth: 4,
+                    dash: [],
+                    drawNodes: false,
+                    glow: true
+                });
+            }
+        }
+
+        function drawSmoothCurveOnCanvas(points, startX, width, degToY, opts) {
+            ctx.save();
+            ctx.strokeStyle = opts.strokeStyle;
+            ctx.lineWidth = opts.lineWidth;
+            ctx.lineCap = 'round';
+            ctx.lineJoin = 'round';
+            ctx.setLineDash(opts.dash || []);
+
+            if (opts.glow) {
+                ctx.shadowColor = 'rgba(244, 63, 94, 0.28)';
+                ctx.shadowBlur = 8;
+            }
+
+            // 支援 null 分段（雙字詞間隔）
+            const segments = [];
+            let currentSeg = [];
+            const totalLen = points.length;
+
+            points.forEach((val, idx) => {
+                if (val === null) {
+                    if (currentSeg.length > 0) segments.push(currentSeg);
+                    currentSeg = [];
+                } else {
+                    const x = startX + (idx / Math.max(1, totalLen - 1)) * width;
+                    const y = degToY(val);
+                    currentSeg.push({ x, y, val });
+                }
+            });
+            if (currentSeg.length > 0) segments.push(currentSeg);
+
+            segments.forEach(seg => {
+                if (seg.length === 0) return;
+                ctx.beginPath();
+                ctx.moveTo(seg[0].x, seg[0].y);
+                for (let i = 1; i < seg.length; i++) {
+                    ctx.lineTo(seg[i].x, seg[i].y);
+                }
+                ctx.stroke();
+
+                if (opts.drawNodes) {
+                    ctx.setLineDash([]);
+                    seg.forEach((pt, idx) => {
+                        if (idx === 0 || idx === seg.length - 1 || pt.val <= 1.05) {
+                            ctx.beginPath();
+                            ctx.fillStyle = '#ffffff';
+                            ctx.arc(pt.x, pt.y, 4, 0, Math.PI * 2);
+                            ctx.fill();
+                            ctx.stroke();
+                        }
+                    });
+                    ctx.setLineDash(opts.dash || []);
+                }
+            });
+
+            ctx.restore();
+        }
+
+        /**
+         * ============================================================================
+         * 8. 抗噪歸一化自相關基頻檢測算法 (NSDF Pitch Detection) 與即時錄音
+         * ============================================================================
+         */
+        function autoCorrelate(buf, sampleRate, minRmsThreshold = 0.018) {
+            const SIZE = buf.length;
+            let rms = 0;
+            for (let i = 0; i < SIZE; i++) {
+                const val = buf[i];
+                rms += val * val;
+            }
+            rms = Math.sqrt(rms / SIZE);
+            // 動態底噪能量門檻過濾環境背景噪音與氣流雜音
+            if (rms < minRmsThreshold) return -1;
+
+            // 預處理：去除直流偏移 (DC Offset) 並應用漢寧窗減少邊界頻譜洩漏
+            let mean = 0;
+            for (let i = 0; i < SIZE; i++) mean += buf[i];
+            mean /= SIZE;
+
+            const cleanBuf = new Float32Array(SIZE);
+            for (let i = 0; i < SIZE; i++) {
+                cleanBuf[i] = buf[i] - mean;
+            }
+
+            // 限制人聲基頻搜尋範圍 (65Hz - 480Hz)，避開低頻電流/冷氣嗡嗡聲與高頻齒音雜訊
+            const minLag = Math.floor(sampleRate / 480);
+            const maxLag = Math.min(Math.floor(SIZE / 2), Math.floor(sampleRate / 65));
+            if (maxLag <= minLag) return -1;
+
+            // 計算歸一化平方差函數 (NSDF / McLeod Pitch Method)，獲得高抗噪週期清晰度
+            let bestLag = -1;
+            let bestClarity = -1;
+            const nsdf = new Float32Array(maxLag + 1);
+
+            for (let tau = minLag; tau <= maxLag; tau++) {
+                let acf = 0;
+                let divisorM = 0;
+                const len = SIZE - tau;
+                for (let i = 0; i < len; i++) {
+                    const x1 = cleanBuf[i];
+                    const x2 = cleanBuf[i + tau];
+                    acf += x1 * x2;
+                    divisorM += x1 * x1 + x2 * x2;
+                }
+                const clarity = divisorM > 0 ? (2 * acf) / divisorM : 0;
+                nsdf[tau] = clarity;
+            }
+
+            // 尋找第一個高於閾值的主峰（防止八度倍頻誤判）
+            let inPositiveRegion = false;
+            let localMaxClarity = -1;
+            let localMaxTau = -1;
+            const peaks = [];
+
+            for (let tau = minLag; tau <= maxLag; tau++) {
+                const val = nsdf[tau];
+                if (val > 0) {
+                    inPositiveRegion = true;
+                    if (val > localMaxClarity) {
+                        localMaxClarity = val;
+                        localMaxTau = tau;
+                    }
+                } else if (inPositiveRegion) {
+                    if (localMaxClarity > 0.5) {
+                        peaks.push({ tau: localMaxTau, clarity: localMaxClarity });
+                    }
+                    inPositiveRegion = false;
+                    localMaxClarity = -1;
+                }
+            }
+
+            if (peaks.length === 0) return -1;
+            const overallMaxClarity = Math.max(...peaks.map(p => p.clarity));
+            // 清晰度低於 0.84 視為清輔音摩擦噪音或起音氣流雜音，直接丟棄
+            if (overallMaxClarity < 0.84) return -1;
+
+            // 優先尋找高週期（低頻率，即真正基頻 F0 而非二次諧波 2F0）的主峰
+            // 若存在週期約為 2 倍（頻率為一半）且清晰度達主峰 88% 以上的峰，優先選取真基頻，避免起音倍頻跳到 4 度
+            let chosenPeak = peaks.find(p => p.clarity >= overallMaxClarity * 0.92) || peaks[0];
+            for (let i = peaks.length - 1; i >= 0; i--) {
+                const candidate = peaks[i];
+                if (candidate.tau > chosenPeak.tau * 1.75 && candidate.clarity >= overallMaxClarity * 0.88) {
+                    chosenPeak = candidate;
+                    break;
+                }
+            }
+            let T0 = chosenPeak.tau;
+
+            // 拋物線插值提高頻率精度
+            if (T0 > minLag && T0 < maxLag) {
+                const x1 = nsdf[T0 - 1];
+                const x2 = nsdf[T0];
+                const x3 = nsdf[T0 + 1];
+                const a = (x1 + x3 - 2 * x2) / 2;
+                const b = (x3 - x1) / 2;
+                if (a < 0) T0 = T0 - b / (2 * a);
+            }
+
+            const freq = sampleRate / T0;
+            if (freq < 65 || freq > 480) return -1;
+            return freq;
+        }
+
+        let mediaStream = null;
+        let mediaRecorder = null;
+        let audioChunks = [];
+        let analyser = null;
+        let rafId = null;
+        let recordedF0Samples = [];
+        let recordStartTime = 0;
+        let calibrationFrames = [];
+
+        async function toggleRecording() {
+            if (state.isRecording) {
+                stopRecording();
+            } else {
+                await startRecording();
+            }
+        }
+
+        async function startRecording() {
+            try {
+                const ctx = getAudioContext();
+                mediaStream = await navigator.mediaDevices.getUserMedia({
+                    audio: {
+                        echoCancellation: true,
+                        noiseSuppression: true,
+                        autoGainControl: false
+                    }
+                });
+
+                const source = ctx.createMediaStreamSource(mediaStream);
+
+                // 加入高通濾波器（80Hz）與低通濾波器（950Hz），在硬件進入分析器前過濾環境低頻震動與高頻嘶嘶聲
+                const highPass = ctx.createBiquadFilter();
+                highPass.type = 'highpass';
+                highPass.frequency.value = 80;
+
+                const lowPass = ctx.createBiquadFilter();
+                lowPass.type = 'lowpass';
+                lowPass.frequency.value = 950;
+
+                analyser = ctx.createAnalyser();
+                analyser.fftSize = 2048;
+
+                source.connect(highPass);
+                highPass.connect(lowPass);
+                lowPass.connect(analyser);
+
+                audioChunks = [];
+                mediaRecorder = null;
+
+                // 安全初始化 MediaRecorder（相容 Safari、Chrome 及受限 iframe 環境）
+                if (typeof MediaRecorder !== 'undefined') {
+                    try {
+                        const mimeTypes = [
+                            'audio/webm;codecs=opus',
+                            'audio/webm',
+                            'audio/mp4',
+                            'audio/ogg;codecs=opus',
+                            ''
+                        ];
+                        let supportedType = '';
+                        if (typeof MediaRecorder.isTypeSupported === 'function') {
+                            supportedType = mimeTypes.find(t => t === '' || MediaRecorder.isTypeSupported(t)) || '';
+                        }
+                        mediaRecorder = supportedType
+                            ? new MediaRecorder(mediaStream, { mimeType: supportedType })
+                            : new MediaRecorder(mediaStream);
+
+                        mediaRecorder.ondataavailable = (e) => {
+                            if (e.data && e.data.size > 0) audioChunks.push(e.data);
+                        };
+                        mediaRecorder.onstop = () => {
+                            if (audioChunks.length > 0) {
+                                const blobType = (mediaRecorder && mediaRecorder.mimeType) || 'audio/webm';
+                                const blob = new Blob(audioChunks, { type: blobType });
+                                if (state.audioBlobUrl) URL.revokeObjectURL(state.audioBlobUrl);
+                                state.audioBlobUrl = URL.createObjectURL(blob);
+                                document.getElementById('btnPlayUserAudio').disabled = false;
+                            }
+                        };
+                    } catch (recErr) {
+                        // 若環境不支援 MediaRecorder，仍允許 Web Audio API 繼續進行即時基頻分析
+                        console.warn('MediaRecorder fallback triggered:', recErr);
+                        mediaRecorder = null;
+                    }
+                }
+
+                recordedF0Samples = [];
+                calibrationFrames = [];
+                state.noiseFloorRms = 0.018;
+                state.userPitchCurve = [];
+                state.matchedCantoTone = null;
+                state.isRecording = true;
+                recordStartTime = performance.now();
+
+                if (mediaRecorder) {
+                    try {
+                        mediaRecorder.start();
+                    } catch (startErr) {
+                        console.warn('MediaRecorder start skipped:', startErr);
+                        mediaRecorder = null;
+                    }
+                }
+                updateRecordUI(true);
+                analyzeAudioFrame();
+
+                // 自動最長錄音 4 秒停止
+                setTimeout(() => {
+                    if (state.isRecording) stopRecording();
+                }, 4000);
+
+            } catch (err) {
+                console.error(err);
+                showToast('無法存取麥克風，請確認瀏覽器權限或使用下方「典型發音模擬測試」體驗功能。', 'warning');
+            }
+        }
+
+        function analyzeAudioFrame() {
+            if (!state.isRecording) return;
+
+            const buffer = new Float32Array(analyser.fftSize);
+            analyser.getFloatTimeDomainData(buffer);
+
+            // 計算即時音量 RMS
+            let sum = 0;
+            for (let i = 0; i < buffer.length; i++) sum += buffer[i] * buffer[i];
+            const rms = Math.sqrt(sum / buffer.length);
+
+            const elapsed = performance.now() - recordStartTime;
+
+            // 前 180ms 自動採樣環境背景底噪，動態抬高能量觸發門檻
+            if (elapsed < 180 && rms < 0.06) {
+                calibrationFrames.push(rms);
+                const avgNoise = calibrationFrames.reduce((a, b) => a + b, 0) / calibrationFrames.length;
+                state.noiseFloorRms = Math.max(0.018, avgNoise * 2.4);
+            }
+
+            // 扣除底噪後的有效音量條顯示
+            const effectiveRms = Math.max(0, rms - state.noiseFloorRms * 0.6);
+            const volPct = Math.min(100, Math.round(effectiveRms * 500));
+            document.getElementById('volumeBar').style.width = `${volPct}%`;
+
+            // 使用動態底噪門檻提取高純度基頻 F0
+            const hz = autoCorrelate(buffer, state.audioCtx.sampleRate, state.noiseFloorRms);
+            const liveTag = document.getElementById('livePitchTag');
+            if (hz > 0) {
+                const deg = hzToDegree(hz);
+                recordedF0Samples.push({ t: elapsed, hz, deg, rms });
+                liveTag.classList.remove('hidden');
+                liveTag.textContent = `${Math.round(hz)} Hz (${deg.toFixed(1)}度)`;
+
+                // 即時預覽曲線（過濾前兩幀起音瞬間抖動）
+                if (recordedF0Samples.length >= 3) {
+                    const previewDegs = stabilizeOnsetAndTail(recordedF0Samples.map(s => s.deg));
+                    state.userPitchCurve = smoothArray(previewDegs);
+                    drawPitchChart();
+                }
+            }
+
+            rafId = requestAnimationFrame(analyzeAudioFrame);
+        }
+
+        function stopRecording() {
+            if (!state.isRecording) return;
+            state.isRecording = false;
+            cancelAnimationFrame(rafId);
+
+            if (mediaRecorder && mediaRecorder.state !== 'inactive') {
+                try {
+                    mediaRecorder.stop();
+                } catch (stopErr) {
+                    console.warn('MediaRecorder stop error:', stopErr);
+                }
+            }
+            if (mediaStream) {
+                mediaStream.getTracks().forEach(t => t.stop());
+            }
+
+            updateRecordUI(false);
+            document.getElementById('volumeBar').style.width = '0%';
+
+            if (recordedF0Samples.length < 7) {
+                showToast('有效濁音過短或被環境噪音遮蔽，請靠近麥克風清晰發音，或試用模擬測試按鈕。', 'warning');
+                return;
+            }
+
+            // 1. 裁剪首尾清輔音/氣流過渡幀：要求能量必須達到峰值 42% 以上，真正對齊「韻母聲帶穩定起振點」
+            const maxRms = Math.max(...recordedF0Samples.map(s => s.rms));
+            let startIdx = recordedF0Samples.findIndex(s => s.rms >= maxRms * 0.42);
+            let endIdx = recordedF0Samples.length - 1;
+            while (endIdx > startIdx && recordedF0Samples[endIdx].rms < maxRms * 0.30) {
+                endIdx--;
+            }
+            const coreSamples = (startIdx !== -1 && endIdx - startIdx >= 5)
+                ? recordedF0Samples.slice(startIdx, endIdx + 1)
+                : recordedF0Samples.filter(s => s.rms >= maxRms * 0.28);
+            const validSamples = coreSamples.length >= 5 ? coreSamples : recordedF0Samples;
+
+            // 2. 過濾離群倍頻誤差（強制將起音高頻倍頻拉回真基頻）
+            const cleanedHz = removeOctaveErrors(validSamples.map(s => s.hz));
+
+            // 3. 若啟用通用/自適應模式，根據本次發音的基頻分佈自動對齊個人相對音域，避免女聲或高音者起始音高全被映射為 4 度
+            if (state.autoAdaptRange && cleanedHz.length >= 5) {
+                adaptPitchRangeFromSpeech(cleanedHz);
+            }
+
+            const degrees = cleanedHz.map(hz => hzToDegree(hz));
+
+            // 4. 起始音高與尾音穩定化處理（過濾前 15% 起音爬坡瞬態，鎖定韻母穩定起點）
+            const stabilizedDegrees = stabilizeOnsetAndTail(degrees);
+            const smoothed = smoothArray(stabilizedDegrees);
+
+            // 重採樣為標準 24 點以方便視覺繪製與五度距離分析
+            state.userPitchCurve = resampleArray(smoothed, 24);
+            state.userRawF0 = cleanedHz;
+
+            const durationMs = Math.round(validSamples[validSamples.length - 1].t - validSamples[0].t);
+            runAcousticDiagnosis(state.userPitchCurve, cleanedHz, durationMs);
+        }
+
+        // 自適應相對音域錨定：根據講者自然發音基頻分佈，自動校準 1 度與 5 度參考線
+        function adaptPitchRangeFromSpeech(hzArr) {
+            const sorted = [...hzArr].sort((a, b) => a - b);
+            const p10 = sorted[Math.floor(sorted.length * 0.1)];
+            const p90 = sorted[Math.floor(sorted.length * 0.9)];
+            const median = sorted[Math.floor(sorted.length * 0.5)];
+
+            // 判斷講者基礎聲線區間（如女聲中位數通常 > 185Hz，男聲通常 < 155Hz）
+            // 以講者最低谷值作為 1.1~1.3 度參考，動態推算合理的 1度~5度跨度（約 1.1 個八度）
+            const estimatedMin = Math.max(70, Math.min(p10 * 0.94, median * 0.72));
+            const estimatedMax = Math.max(estimatedMin * 1.95, p90 * 1.08);
+
+            state.minHz = Math.round(estimatedMin);
+            state.maxHz = Math.round(estimatedMax);
+            const badge = document.getElementById('rangeBadge');
+            if (badge) badge.textContent = `${state.minHz}-${state.maxHz}Hz`;
+        }
+
+        // 起始音高穩定器：消除聲母輔音過渡期（前 15% 幀）的音高尖峰，鎖定韻母穩定起點
+        function stabilizeOnsetAndTail(degArr) {
+            if (degArr.length < 6) return degArr;
+            const out = [...degArr];
+
+            // 取第 2 至第 5 幀（韻母完全進入穩定週期後）的中位數作為起點基準
+            const stableStartIdx = Math.min(2, Math.floor(out.length * 0.15));
+            const stableEndIdx = Math.min(out.length - 1, stableStartIdx + 4);
+            const onsetWindow = out.slice(stableStartIdx, stableEndIdx + 1).sort((a, b) => a - b);
+            const onsetMedian = onsetWindow[Math.floor(onsetWindow.length / 2)];
+
+            // 若前幾幀起音瞬態偏高或偏低超過 0.4 度，直接對齊穩定起點
+            for (let i = 0; i < stableStartIdx; i++) {
+                if (Math.abs(out[i] - onsetMedian) > 0.4) {
+                    out[i] = onsetMedian;
+                }
+            }
+
+            // 檢查最後一幀收音氣流衰減造成的無效跳變
+            const tailWindow = out.slice(Math.max(0, out.length - 4), out.length - 1).sort((a, b) => a - b);
+            const tailMedian = tailWindow[Math.floor(tailWindow.length / 2)];
+            if (Math.abs(out[out.length - 1] - tailMedian) > 0.65) {
+                out[out.length - 1] = tailMedian;
+            }
+
+            return out;
+        }
+
+        // 線性插值重採樣
+        function resampleArray(arr, targetLen) {
+            if (arr.length === 0) return [];
+            if (arr.length === 1) return new Array(targetLen).fill(arr[0]);
+            const out = [];
+            for (let i = 0; i < targetLen; i++) {
+                const pos = (i / (targetLen - 1)) * (arr.length - 1);
+                const idx = Math.floor(pos);
+                const frac = pos - idx;
+                const v1 = arr[idx];
+                const v2 = arr[Math.min(arr.length - 1, idx + 1)];
+                out.push(v1 + (v2 - v1) * frac);
+            }
+            return out;
+        }
+
+        /**
+         * ============================================================================
+         * 9. 核心聲學與粵語負遷移診斷算法
+         * ============================================================================
+         */
+        function runAcousticDiagnosis(curve, rawHzArr, durationMs) {
+            const cat = state.category;
+            const n = curve.length;
+
+            // 計算實測基頻範圍
+            const minF0 = Math.round(Math.min(...rawHzArr));
+            const maxF0 = Math.round(Math.max(...rawHzArr));
+            document.getElementById('f0RangeMeasured').textContent = localizeText(`實測基頻範圍: ${minF0} - ${maxF0} Hz`);
+            document.getElementById('durationMeasured').textContent = localizeText(`有效濁音時長: ${durationMs} ms`);
+
+            // 提取關鍵五度特徵點（分析目標三聲字：單字取全段，雙字詞取前字48%區間進行三聲變調核心分析，同時兼顧後字）
+            const focusCurve = cat === 'full' ? curve : curve.slice(0, Math.floor(n * 0.48));
+            const startDeg = focusCurve[0];
+            const endDeg = focusCurve[focusCurve.length - 1];
+            let minDeg = 5.5, minIdx = 0;
+            focusCurve.forEach((v, idx) => {
+                if (v < minDeg) { minDeg = v; minIdx = idx; }
+            });
+            const minPosRatio = minIdx / Math.max(1, focusCurve.length - 1);
+
+            // 生成實測五度調值代碼
+            let measuredToneDigits = '';
+            const rStart = Math.round(Math.max(1, Math.min(5, startDeg)));
+            const rMin = Math.round(Math.max(1, Math.min(5, minDeg)));
+            const rEnd = Math.round(Math.max(1, Math.min(5, endDeg)));
+
+            if (minPosRatio > 0.15 && minPosRatio < 0.85 && (startDeg - minDeg >= 0.45) && (endDeg - minDeg >= 0.55)) {
+                measuredToneDigits = `${rStart}${rMin}${rEnd}`;
+            } else {
+                measuredToneDigits = `${rStart}${rEnd}`;
+            }
+
+            // 如果是雙音節詞組，補充後半段（第二字）的五度調值
+            let fullMeasuredDisplay = measuredToneDigits;
+            if (cat !== 'full') {
+                const secondCurve = curve.slice(Math.ceil(n * 0.52));
+                const s2Start = Math.round(Math.max(1, Math.min(5, secondCurve[0])));
+                const s2Min = Math.round(Math.max(1, Math.min(5, Math.min(...secondCurve))));
+                const s2End = Math.round(Math.max(1, Math.min(5, secondCurve[secondCurve.length - 1])));
+                const s2Code = (s2Start - s2Min >= 0.5 && s2End - s2Min >= 0.5) ? `${s2Start}${s2Min}${s2End}` : `${s2Start}${s2End}`;
+                fullMeasuredDisplay = `${measuredToneDigits} + ${s2Code}`;
+            }
+
+            document.getElementById('measuredCode').textContent = fullMeasuredDisplay;
+            document.getElementById('expectedCodeRef').textContent = state.currentItem.code;
+
+            // 更新關鍵五度位置詳細說明
+            const keyPointsHtml = `
+                <div class="flex justify-between"><span>${localizeText('三聲字起點音高：')}</span><strong class="font-mono text-slate-900">${startDeg.toFixed(1)} 度</strong></div>
+                <div class="flex justify-between"><span>${localizeText('轉折最低點位置：')}</span><strong class="font-mono text-rose-600">${minDeg.toFixed(1)} 度</strong> (${localizeText('時程')} ${Math.round(minPosRatio * 100)}%)</div>
+                <div class="flex justify-between"><span>${localizeText('三聲字終點音高：')}</span><strong class="font-mono text-slate-900">${endDeg.toFixed(1)} 度</strong></div>
+            `;
+            document.getElementById('keyPointsDetail').innerHTML = keyPointsHtml;
+
+            // ------------------------------------------------------------------------
+            // 計算與粵語六聲（1~6聲）的歐氏距離相似度 (針對核心三聲字區間)
+            // ------------------------------------------------------------------------
+            const resampledFocus = resampleArray(focusCurve, 5);
+            const cantoMatches = CANTONESE_TONES.map(ct => {
+                let sqErr = 0;
+                for (let i = 0; i < 5; i++) {
+                    sqErr += Math.pow(resampledFocus[i] - ct.points[i], 2);
+                }
+                const rmse = Math.sqrt(sqErr / 5);
+                // 最大可能誤差約為 3.5 度，轉換為百分比相似度
+                const similarity = Math.max(0, Math.min(99, Math.round((1 - rmse / 3.2) * 100)));
+                return { ...ct, similarity, rmse };
+            }).sort((a, b) => b.similarity - a.similarity);
+
+            const topCanto = cantoMatches[0];
+            state.matchedCantoTone = topCanto.similarity >= 72 ? topCanto : null;
+
+            // ------------------------------------------------------------------------
+            // 根據三大練習場景，進行普通話標準度評分與粵語負遷移專業診斷
+            // ------------------------------------------------------------------------
+            let score = 0;
+            let statusLevel = 'error'; // 'pass' | 'warn' | 'error'
+            let headline = '';
+            let advice = '';
+            let cantoHeadline = '';
+            let cantoAnalysis = '';
+
+            if (cat === 'full') {
+                // 場景1：單字/句尾完整上聲 (目標 214)
+                const hasDip = (startDeg - minDeg) >= 0.55 && minDeg <= 1.55;
+                const hasRise = (endDeg - minDeg) >= 1.4 && endDeg >= 3.1;
+
+                if (hasDip && hasRise) {
+                    score = Math.min(98, Math.round(85 + (1.5 - Math.abs(minDeg - 1.0)) * 8));
+                    statusLevel = 'pass';
+                    headline = '發音標準！完整呈現「214」低降升曲折調';
+                    advice = `您的音高先由 ${startDeg.toFixed(1)} 度下沉至 ${minDeg.toFixed(1)} 度（觸及1度低音區），隨後順利上揚至 ${endDeg.toFixed(1)} 度，調型飽滿準確。`;
+                } else if (!hasDip && hasRise) {
+                    score = 62;
+                    statusLevel = 'error';
+                    headline = '存在偏誤：缺乏前半段「由2降到1」的下沉過程';
+                    advice = `您的起點直接從 ${startDeg.toFixed(1)} 度往上滑升至 ${endDeg.toFixed(1)} 度，變成了單純的升調（類似 ${measuredToneDigits}），缺少上聲標誌性的低音轉折。`;
+                } else if (hasDip && !hasRise) {
+                    score = 65;
+                    statusLevel = 'warn';
+                    headline = '存在偏誤：只降不升（讀成了半三聲 21）';
+                    advice = `您在單字/句尾位置只降到了 ${minDeg.toFixed(1)} 度，但結尾停留在 ${endDeg.toFixed(1)} 度未往上挑起（需升至4度左右）。`;
+                } else {
+                    score = 50;
+                    statusLevel = 'error';
+                    headline = '調型偏平或升降幅度不足，未達 214 標準';
+                    advice = `實測調值為 [${measuredToneDigits}]。建議刻意放慢語速，先壓低喉頭至最低音（1度），再向上滑出尾音。`;
+                }
+
+                // 粵語相似性解讀（針對單字 214）
+                if (topCanto.num === 5 && topCanto.similarity >= 75) {
+                    cantoHeadline = `⚠️ 高度相似：粵語第5聲（陽上 ${topCanto.code}，如「${topCanto.example}」）`;
+                    cantoAnalysis = `相似度達 ${topCanto.similarity}%！這是粵語母語者最典型的負遷移錯誤：直接用粵語陽上調（13/23）替代普通話上聲（214），導致缺少「先降後升」的曲折感且終點不夠高。`;
+                } else if (topCanto.num === 4 && topCanto.similarity >= 75) {
+                    cantoHeadline = `⚠️ 高度相似：粵語第4聲（陽平 ${topCanto.code}，如「${topCanto.example}」）`;
+                    cantoAnalysis = `相似度達 ${topCanto.similarity}%！您把單字三聲讀成了純低降調（21），與粵語第4聲幾乎一致，請在句尾加上上揚的尾巴。`;
+                } else if (topCanto.num === 2 && topCanto.similarity >= 75) {
+                    cantoHeadline = `⚠️ 高度相似：粵語第2聲（陰上 ${topCanto.code}，如「${topCanto.example}」）`;
+                    cantoAnalysis = `相似度達 ${topCanto.similarity}%！起點過高且直接上揚，變成了中升調（35），容易被聽成普通話第二聲（陽平）。`;
+                } else {
+                    cantoHeadline = `與粵語六聲差異明顯（最接近粵語第${topCanto.num}聲，僅 ${topCanto.similarity}%）`;
+                    cantoAnalysis = `普通話完整上聲 [214] 是粵語聲調系統中不存在的「降升曲折調」，低相似度說明您已成功擺脫粵語平/直調習慣！`;
+                }
+
+            } else if (cat === 'half') {
+                // 場景2：半三聲變調 (目標 21 + 後字)
+                const isLowFall = (startDeg <= 2.7) && (minDeg <= 1.55) && (endDeg - minDeg <= 0.65);
+                if (isLowFall) {
+                    score = 94;
+                    statusLevel = 'pass';
+                    headline = '非常標準！成功讀出「半三聲 (21)」低降調';
+                    advice = `前字由 ${startDeg.toFixed(1)} 度平穩壓低至 ${endDeg.toFixed(1)} 度，沒有多餘的回升尾巴，與後續音節銜接自然流暢。`;
+                } else if (endDeg - minDeg > 0.75) {
+                    score = 64;
+                    statusLevel = 'warn';
+                    headline = '存在偏誤：非句尾位置過度讀出了「上揚尾巴」';
+                    advice = `在1、2、4聲前，三聲只需讀前半段 [21]，不必像單字那樣回升至 ${endDeg.toFixed(1)} 度，否則會顯得生硬拖沓。`;
+                } else {
+                    score = 60;
+                    statusLevel = 'error';
+                    headline = '存在偏誤：前字音高偏平，未沉入 1 度低音區';
+                    advice = `實測前字調值為 [${measuredToneDigits}]，最低點僅到 ${minDeg.toFixed(1)} 度。請將音高進一步壓低至 1 度。`;
+                }
+
+                // 粵語相似性解讀（針對半三聲 21 —— 正遷移提示！）
+                if (topCanto.num === 4 && topCanto.similarity >= 75) {
+                    cantoHeadline = `✅ 正遷移匹配：與粵語第4聲（陽平 ${topCanto.code}）高度相似 (${topCanto.similarity}%)`;
+                    cantoAnalysis = `太棒了！普通話「半三聲 [21]」在聲學調值上與粵語第4聲（如「${topCanto.example}」）完全一致。您的發音精準複用了母語優勢！`;
+                } else if (topCanto.num === 6 && topCanto.similarity >= 75) {
+                    cantoHeadline = `⚠️ 負遷移警告：誤讀為粵語第6聲（陽去 ${topCanto.code}，如「${topCanto.example}」）`;
+                    cantoAnalysis = `相似度達 ${topCanto.similarity}%！您把半三聲讀成了平坦的 [22] 低平調，缺少由 2 度向下沉到 1 度的「下墜感」。`;
+                } else {
+                    cantoHeadline = `最接近粵語第${topCanto.num}聲（${topCanto.code}，相似度 ${topCanto.similarity}%）`;
+                    cantoAnalysis = `提示：練習普通話半三聲（如「老師、好看」）時，可主動借用粵語第4聲（如「時、來」，21調）的發音感覺。`;
+                }
+
+            } else if (cat === 'sandhi') {
+                // 場景3：雙三聲連讀變調 (目標 35 + 214)
+                const isRising = (endDeg - startDeg >= 1.15) && (endDeg >= 3.8) && (minDeg >= 2.2);
+                const isStill214 = (startDeg - minDeg >= 0.5) && (minDeg <= 1.6);
+
+                if (isRising) {
+                    score = 93;
+                    statusLevel = 'pass';
+                    headline = '變調準確！前字已成功變讀為「35 陽平調」';
+                    advice = `前字從 ${startDeg.toFixed(1)} 度順暢上升至 ${endDeg.toFixed(1)} 度，符合「三聲+三聲 → 陽平(35)+上聲(214)」的連讀規律。`;
+                } else if (isStill214) {
+                    score = 55;
+                    statusLevel = 'error';
+                    headline = '未發生變調：前字仍讀成了低降/曲折調（214 或 21）';
+                    advice = `兩個三聲相連時，前字必須變調為第二聲（35），不能讀成 [${measuredToneDigits}]。請把前字當作普通話第二聲（或粵語第2聲）來讀。`;
+                } else {
+                    score = 66;
+                    statusLevel = 'warn';
+                    headline = '變調升幅不足：前字未升至 5 度高音區';
+                    advice = `實測前字調值為 [${measuredToneDigits}]，僅升至 ${endDeg.toFixed(1)} 度，請加大上揚幅度至 5 度。`;
+                }
+
+                // 粵語相似性解讀（針對雙三聲前字變調 35）
+                if (topCanto.num === 2 && topCanto.similarity >= 75) {
+                    cantoHeadline = `✅ 正遷移匹配：與粵語第2聲（陰上 ${topCanto.code}）高度相似 (${topCanto.similarity}%)`;
+                    cantoAnalysis = `標準到位！雙三聲變調後的前字 [35] 與粵語第2聲（如「${topCanto.example}」）調值相同，可直接借用粵語第2聲的升調發音。`;
+                } else if ((topCanto.num === 4 || topCanto.num === 5) && topCanto.similarity >= 72) {
+                    cantoHeadline = `⚠️ 負遷移提示：前字音區過低，接近粵語第${topCanto.num}聲（${topCanto.code}）`;
+                    cantoAnalysis = `相似度 ${topCanto.similarity}%。雙三聲連讀時前字不應停留在 1-2 度低音區，而應抬高起點至 3 度並升至 5 度。`;
+                } else {
+                    cantoHeadline = `最接近粵語第${topCanto.num}聲（${topCanto.code}，相似度 ${topCanto.similarity}%）`;
+                    cantoAnalysis = `口訣：讀「你好、水果」時，第一個字直接借用粵語第2聲（35，如「史、九」）的調值即可。`;
+                }
+            }
+
+            // 更新診斷報告 UI
+            renderDiagnosisUI({
+                score,
+                statusLevel,
+                headline,
+                advice,
+                cantoHeadline,
+                cantoAnalysis,
+                cantoMatches
+            });
+
+            drawPitchChart();
+        }
+
+        function renderDiagnosisUI(res) {
+            const badge = document.getElementById('overallVerdictBadge');
+            const scoreTag = document.getElementById('mandarinScoreTag');
+            const scoreBar = document.getElementById('mandarinScoreBar');
+            const evalCard = document.getElementById('mandarinEvalCard');
+
+            if (res.statusLevel === 'pass') {
+                badge.className = 'inline-flex items-center px-3 py-1 rounded-full text-xs font-bold bg-emerald-100 text-emerald-800 border border-emerald-200';
+                badge.textContent = localizeText('✓ 符合普通話聲調標準');
+                scoreTag.className = 'text-xs font-bold px-2 py-0.5 rounded bg-emerald-100 text-emerald-800';
+                scoreBar.className = 'h-full bg-emerald-500 transition-all duration-500';
+                evalCard.className = 'bg-emerald-50/40 rounded-xl p-4 border border-emerald-200 flex flex-col justify-between';
+            } else if (res.statusLevel === 'warn') {
+                badge.className = 'inline-flex items-center px-3 py-1 rounded-full text-xs font-bold bg-amber-100 text-amber-800 border border-amber-200';
+                badge.textContent = localizeText('△ 基本達標（存在細節微瑕）');
+                scoreTag.className = 'text-xs font-bold px-2 py-0.5 rounded bg-amber-100 text-amber-800';
+                scoreBar.className = 'h-full bg-amber-500 transition-all duration-500';
+                evalCard.className = 'bg-amber-50/40 rounded-xl p-4 border border-amber-200 flex flex-col justify-between';
+            } else {
+                badge.className = 'inline-flex items-center px-3 py-1 rounded-full text-xs font-bold bg-rose-100 text-rose-800 border border-rose-200';
+                badge.textContent = localizeText('✕ 存在聲調偏誤（需調整）');
+                scoreTag.className = 'text-xs font-bold px-2 py-0.5 rounded bg-rose-100 text-rose-800';
+                scoreBar.className = 'h-full bg-rose-500 transition-all duration-500';
+                evalCard.className = 'bg-rose-50/40 rounded-xl p-4 border border-rose-200 flex flex-col justify-between';
+            }
+
+            scoreTag.textContent = `${res.score} ${localizeText('分')}`;
+            scoreBar.style.width = `${res.score}%`;
+            document.getElementById('mandarinEvalHeadline').textContent = localizeText(res.headline);
+            document.getElementById('mandarinEvalAdvice').textContent = localizeText(res.advice);
+
+            // 更新粵語相似性卡片
+            const top1 = res.cantoMatches[0];
+            document.getElementById('cantoSimilarityTag').textContent = `${top1.similarity}% ${localizeText('相似')}`;
+            document.getElementById('cantoMatchHeadline').textContent = localizeText(res.cantoHeadline);
+            document.getElementById('cantoMatchAnalysis').textContent = localizeText(res.cantoAnalysis);
+
+            const topHtml = res.cantoMatches.slice(0, 3).map((m, idx) => `
+                <span class="px-2 py-0.5 rounded-md ${idx === 0 ? 'bg-purple-600 text-white font-semibold' : 'bg-purple-100 text-purple-800'}">
+                    ${localizeText(`粵語第${m.num}聲`)} (${m.code}): ${m.similarity}%
+                </span>
+            `).join('');
+            document.getElementById('cantoTopMatches').innerHTML = topHtml;
+
+            // 更新畫布圖例
+            const legendWrap = document.getElementById('legendCantoWrap');
+            if (state.matchedCantoTone) {
+                legendWrap.classList.remove('hidden');
+                document.getElementById('legendCantoText').textContent = localizeText(`粵語第${state.matchedCantoTone.num}聲 (${state.matchedCantoTone.code})`);
+            } else {
+                legendWrap.classList.add('hidden');
+            }
+        }
+
+        /**
+         * ============================================================================
+         * 10. 典型偏誤模擬器（無麥克風環境下亦可測試所有教學案例）
+         * ============================================================================
+         */
+        function runSimulatedCase(simType) {
+            let simDegrees = [];
+            const cat = state.category;
+
+            if (simType === 'std') {
+                // 根據當前類別生成標準 curves
+                if (cat === 'full') {
+                    simDegrees = [2.1, 1.8, 1.4, 1.1, 1.0, 1.2, 1.7, 2.4, 3.2, 3.9];
+                } else if (cat === 'half') {
+                    simDegrees = [2.1, 1.8, 1.5, 1.2, 1.0, 1.0, 4.9, 5.0, 5.0, 5.0];
+                } else {
+                    simDegrees = [3.0, 3.4, 3.9, 4.5, 4.9, 2.1, 1.3, 1.0, 2.3, 3.9];
+                }
+            } else if (simType === 'canto5') {
+                // 粵語第5聲 (13/23) 替代三聲
+                simDegrees = cat === 'full'
+                    ? [1.5, 1.5, 1.6, 1.8, 2.0, 2.3, 2.6, 2.8, 3.0, 3.1]
+                    : [1.5, 1.6, 1.9, 2.3, 2.8, 4.8, 4.9, 5.0, 5.0, 5.0];
+            } else if (simType === 'canto4') {
+                // 粵語第4聲 (21) 純低降
+                simDegrees = cat === 'full'
+                    ? [2.1, 1.9, 1.8, 1.6, 1.4, 1.3, 1.2, 1.1, 1.0, 1.0]
+                    : [2.1, 1.8, 1.5, 1.2, 1.0, 4.9, 5.0, 5.0, 5.0, 5.0];
+            } else if (simType === 'canto6') {
+                // 粵語第6聲 (22) 低平調
+                simDegrees = cat === 'full'
+                    ? [2.1, 2.0, 2.0, 2.0, 2.0, 2.0, 2.0, 2.0, 2.0, 2.0]
+                    : [2.1, 2.0, 2.0, 2.0, 2.0, 4.9, 5.0, 5.0, 5.0, 5.0];
+            } else if (simType === 'noSandhi') {
+                // 雙三聲未變調 (214 + 214)
+                simDegrees = [2.1, 1.4, 1.0, 2.2, 3.6, 2.1, 1.3, 1.0, 2.4, 3.8];
+            }
+
+            // 加入微幅自然人聲抖動使其逼真
+            const naturalCurve = resampleArray(simDegrees, 24).map((v, i) => v + Math.sin(i * 0.9) * 0.04);
+            const fakeHz = naturalCurve.map(d => degreeToHz(d));
+
+            state.userPitchCurve = naturalCurve;
+            state.userRawF0 = fakeHz;
+
+            playToneCurve(simDegrees, 0.7);
+            runAcousticDiagnosis(naturalCurve, fakeHz, 680);
+        }
+
+        /**
+         * ============================================================================
+         * 11. 詞庫切換、自訂輸入與事件綁定
+         * ============================================================================
+         */
+        function renderWordChips() {
+            const container = document.getElementById('wordChipsContainer');
+            const list = WORD_BANK[state.category];
+            container.innerHTML = list.map((item, idx) => {
+                const isSelected = state.currentItem.word === item.word;
+                return `
+                    <button data-idx="${idx}" class="word-chip px-3 py-1.5 rounded-xl text-sm font-medium transition border flex items-center gap-1.5 ${
+                        isSelected
+                        ? 'bg-teal-600 text-white border-teal-600 shadow-sm'
+                        : 'bg-white text-slate-700 border-slate-200 hover:border-teal-400 hover:bg-teal-50/50'
+                    }">
+                        <span class="font-bold">${localizeText(item.word)}</span>
+                        <span class="text-xs font-mono ${isSelected ? 'text-teal-100' : 'text-slate-400'}">${item.pinyin}</span>
+                    </button>
+                `;
+            }).join('');
+
+            container.querySelectorAll('.word-chip').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    const idx = parseInt(btn.dataset.idx, 10);
+                    selectTargetItem(WORD_BANK[state.category][idx]);
+                });
+            });
+        }
+
+        function selectTargetItem(item) {
+            state.currentItem = item;
+            state.userPitchCurve = [];
+            state.matchedCantoTone = null;
+            document.getElementById('legendCantoWrap').classList.add('hidden');
+
+            document.getElementById('targetWordDisplay').textContent = localizeText(item.word);
+            document.getElementById('targetPinyinDisplay').textContent = item.pinyin;
+            document.getElementById('targetToneDigits').textContent = item.code;
+
+            renderWordChips();
+            drawPitchChart();
+        }
+
+        function switchCategory(cat) {
+            state.category = cat;
+            document.querySelectorAll('.cat-tab').forEach(tab => {
+                if (tab.dataset.cat === cat) {
+                    tab.className = 'cat-tab active px-3.5 py-2 rounded-xl text-sm font-semibold transition flex items-center gap-2 bg-teal-600 text-white shadow-sm';
+                } else {
+                    tab.className = 'cat-tab px-3.5 py-2 rounded-xl text-sm font-semibold transition flex items-center gap-2 bg-slate-100 text-slate-600 hover:bg-slate-200';
+                }
+            });
+            selectTargetItem(WORD_BANK[cat][0]);
+        }
+
+        function applyLanguage() {
+            const dict = I18N_MAP[state.lang];
+            document.querySelectorAll('[data-i18n]').forEach(el => {
+                const key = el.getAttribute('data-i18n');
+                if (dict[key]) {
+                    el.innerHTML = dict[key];
+                }
+            });
+            document.getElementById('btnToggleLang').textContent = state.lang === 'zh-Hant' ? '簡體中文' : '繁體中文';
+            renderWordChips();
+            renderReferenceCharts();
+            selectTargetItem(state.currentItem);
+        }
+
+        // 音域校準控制
+        function setupCalibrationModal() {
+            const modal = document.getElementById('calibrateModal');
+            const minSlider = document.getElementById('minHzSlider');
+            const maxSlider = document.getElementById('maxHzSlider');
+            const minLabel = document.getElementById('minHzLabel');
+            const maxLabel = document.getElementById('maxHzLabel');
+
+            document.getElementById('btnOpenCalibrate').addEventListener('click', () => {
+                minSlider.value = state.minHz;
+                maxSlider.value = state.maxHz;
+                minLabel.textContent = `${state.minHz} Hz`;
+                maxLabel.textContent = `${state.maxHz} Hz`;
+                modal.classList.remove('hidden');
+            });
+
+            document.getElementById('btnCloseCalibrate').addEventListener('click', () => modal.classList.add('hidden'));
+
+            minSlider.addEventListener('input', () => {
+                if (parseInt(minSlider.value) >= parseInt(maxSlider.value) - 30) {
+                    minSlider.value = parseInt(maxSlider.value) - 30;
+                }
+                minLabel.textContent = `${minSlider.value} Hz`;
+            });
+
+            maxSlider.addEventListener('input', () => {
+                if (parseInt(maxSlider.value) <= parseInt(minSlider.value) + 30) {
+                    maxSlider.value = parseInt(minSlider.value) + 30;
+                }
+                maxLabel.textContent = `${maxSlider.value} Hz`;
+            });
+
+            document.querySelectorAll('.preset-voice-btn').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    const p = btn.dataset.preset;
+                    if (p === 'male') { minSlider.value = 85; maxSlider.value = 185; state.autoAdaptRange = false; }
+                    if (p === 'female') { minSlider.value = 150; maxSlider.value = 300; state.autoAdaptRange = false; }
+                    if (p === 'auto') { minSlider.value = 110; maxSlider.value = 260; state.autoAdaptRange = true; }
+                    minLabel.textContent = `${minSlider.value} Hz`;
+                    maxLabel.textContent = `${maxSlider.value} Hz`;
+                });
+            });
+
+            // 自動語音測算音域
+            document.getElementById('btnAutoMeasureRange').addEventListener('click', async () => {
+                const btn = document.getElementById('btnAutoMeasureRange');
+                try {
+                    const ctx = getAudioContext();
+                    const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+                    const src = ctx.createMediaStreamSource(stream);
+                    const an = ctx.createAnalyser();
+                    an.fftSize = 2048;
+                    src.connect(an);
+
+                    btn.textContent = '測音中(2秒)...';
+                    btn.disabled = true;
+                    const freqs = [];
+                    const start = performance.now();
+
+                    const poll = () => {
+                        if (performance.now() - start < 2000) {
+                            const buf = new Float32Array(an.fftSize);
+                            an.getFloatTimeDomainData(buf);
+                            const hz = autoCorrelate(buf, ctx.sampleRate);
+                            if (hz > 70 && hz < 400) freqs.push(hz);
+                            requestAnimationFrame(poll);
+                        } else {
+                            stream.getTracks().forEach(t => t.stop());
+                            btn.textContent = '測音校準';
+                            btn.disabled = false;
+                            if (freqs.length >= 5) {
+                                freqs.sort((a, b) => a - b);
+                                const low = Math.round(freqs[Math.floor(freqs.length * 0.1)]);
+                                const high = Math.round(freqs[Math.floor(freqs.length * 0.9)]);
+                                if (high - low >= 35) {
+                                    minSlider.value = low;
+                                    maxSlider.value = high;
+                                    minLabel.textContent = `${low} Hz`;
+                                    maxLabel.textContent = `${high} Hz`;
+                                    showToast(`測音完成！音域已設為 ${low}Hz - ${high}Hz`, 'success');
+                                } else {
+                                    showToast('音高變化太小，請嘗試從高音滑向低音再測一次。', 'warning');
+                                }
+                            } else {
+                                showToast('未收到足夠聲音，請檢查麥克風。', 'warning');
+                            }
+                        }
+                    };
+                    poll();
+                } catch (e) {
+                    showToast('無法開啟麥克風進行測音。', 'error');
+                }
+            });
+
+            document.getElementById('btnSaveCalibrate').addEventListener('click', () => {
+                state.minHz = parseInt(minSlider.value, 10);
+                state.maxHz = parseInt(maxSlider.value, 10);
+                // 若使用者手動調整滑桿或選取男女聲預設，則以手動設定為準
+                document.getElementById('rangeBadge').textContent = `${state.minHz}-${state.maxHz}Hz`;
+                modal.classList.add('hidden');
+                showToast(`五度音域基準已更新 (${state.minHz} - ${state.maxHz} Hz)`, 'success');
+            });
+
+            minSlider.addEventListener('change', () => { state.autoAdaptRange = false; });
+            maxSlider.addEventListener('change', () => { state.autoAdaptRange = false; });
+        }
+
+        // 初始化事件與首次渲染
+        window.addEventListener('DOMContentLoaded', () => {
+            renderWordChips();
+            renderReferenceCharts();
+            setupCalibrationModal();
+            resizeCanvas();
+
+            window.addEventListener('resize', resizeCanvas);
+
+            // 分類頁籤點擊
+            document.querySelectorAll('.cat-tab').forEach(tab => {
+                tab.addEventListener('click', () => switchCategory(tab.dataset.cat));
+            });
+
+            // 套用自訂詞語
+            document.getElementById('btnApplyCustom').addEventListener('click', () => {
+                const raw = document.getElementById('customWordInput').value.trim();
+                if (!raw) {
+                    showToast('請輸入想要練習的漢字或詞語', 'warning');
+                    return;
+                }
+                const template = WORD_BANK[state.category][0];
+                selectTargetItem({
+                    word: raw,
+                    pinyin: state.category === 'full' ? '自訂單字/句尾' : (state.category === 'half' ? '自訂半三聲詞組' : '自訂雙三聲詞組'),
+                    code: template.code,
+                    syllables: template.syllables,
+                    targetCurve: [...template.targetCurve],
+                    note: template.note
+                });
+                showToast(`已套用自訂檢測目標：「${raw}」`, 'success');
+            });
+
+            // 試聽標準目標發音（普通話真人語音朗讀，不支援時自動降級為五度音高模擬）
+            document.getElementById('btnPlayTargetDemo').addEventListener('click', () => {
+                playStandardPronunciation(state.currentItem.word, state.currentItem.targetCurve);
+            });
+
+            // 預熱瀏覽器語音包列表
+            if ('speechSynthesis' in window) {
+                window.speechSynthesis.getVoices();
+                window.speechSynthesis.onvoiceschanged = () => window.speechSynthesis.getVoices();
+            }
+
+            // 主錄音按鈕
+            document.getElementById('btnRecord').addEventListener('click', toggleRecording);
+
+            // 回放用戶錄音
+            document.getElementById('btnPlayUserAudio').addEventListener('click', () => {
+                if (state.audioBlobUrl) {
+                    const audio = new Audio(state.audioBlobUrl);
+                    audio.play();
+                }
+            });
+
+            // 模擬偏誤測試按鈕
+            document.querySelectorAll('.sim-btn').forEach(btn => {
+                btn.addEventListener('click', () => runSimulatedCase(btn.dataset.sim));
+            });
+
+            // 繁簡切換
+            document.getElementById('btnToggleLang').addEventListener('click', () => {
+                state.lang = state.lang === 'zh-Hant' ? 'zh-Hans' : 'zh-Hant';
+                applyLanguage();
+            });
+        });
+    </script>
+</body>
+</html>

@@ -1,0 +1,1697 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>小音符大冒險 | 兒童普通話三聲樂園</title>
+    <!-- 引入 Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- 引入圓潤可愛的繁簡字體 -->
+    <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600;700&family=Noto+Sans+SC:wght@500;700;900&family=Noto+Sans+TC:wght@500;700;900&display=swap" rel="stylesheet">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['"Noto Sans TC"', '"Noto Sans SC"', 'Fredoka', 'sans-serif'],
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        /* 童趣按鈕立體按壓效果 */
+        .kid-btn {
+            transition: transform 0.12s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.12s ease;
+        }
+        .kid-btn:active {
+            transform: translateY(3px) scale(0.98);
+        }
+        @keyframes float-bounce {
+            0%, 100% { transform: translateY(0px); }
+            50% { transform: translateY(-6px); }
+        }
+        .animate-float {
+            animation: float-bounce 2.4s ease-in-out infinite;
+        }
+        @keyframes pulse-mic {
+            0% { transform: scale(0.96); box-shadow: 0 0 0 0 rgba(251, 113, 133, 0.75); }
+            70% { transform: scale(1.03); box-shadow: 0 0 0 16px rgba(251, 113, 133, 0); }
+            100% { transform: scale(0.96); box-shadow: 0 0 0 0 rgba(251, 113, 133, 0); }
+        }
+        .recording-mic {
+            animation: pulse-mic 1.3s infinite;
+        }
+        @keyframes star-pop {
+            0% { transform: scale(0.3) rotate(-20deg); opacity: 0; }
+            70% { transform: scale(1.2) rotate(8deg); opacity: 1; }
+            100% { transform: scale(1) rotate(0deg); opacity: 1; }
+        }
+        .star-pop {
+            animation: star-pop 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+        }
+    </style>
+</head>
+<body class="bg-gradient-to-b from-sky-100 via-amber-50/70 to-emerald-50 min-h-screen text-slate-800 antialiased selection:bg-amber-200">
+
+    <!-- 頂部童趣樂園導航欄 -->
+    <header class="bg-white/90 backdrop-blur-md border-b-4 border-amber-200 sticky top-0 z-30 shadow-sm">
+        <div class="max-w-6xl mx-auto px-4 h-16 sm:h-18 flex items-center justify-between gap-2">
+            <!-- 品牌吉祥物與標題 -->
+            <div class="flex items-center gap-3">
+                <div class="w-11 h-11 rounded-2xl bg-gradient-to-br from-amber-400 to-orange-500 text-white flex items-center justify-center text-2xl shadow-md border-2 border-white animate-float shrink-0">
+                    🎵
+                </div>
+                <div>
+                    <h1 class="text-base sm:text-xl font-black text-slate-800 tracking-wide flex items-center gap-1.5">
+                        <span data-i18n="appTitle">小音符大冒險</span>
+                        <span class="hidden sm:inline-block text-xs font-bold bg-amber-100 text-amber-800 px-2.5 py-0.5 rounded-full border border-amber-300" data-i18n="appBadge">普通話三聲樂園</span>
+                    </h1>
+                    <p class="text-xs text-slate-500 hidden sm:block" data-i18n="appSubtitle">坐上聲調過山車，跟粵語小精靈一起學好普通話三聲！</p>
+                </div>
+            </div>
+
+            <!-- 星星積分與設定按鈕 -->
+            <div class="flex items-center gap-2 sm:gap-3">
+                <!-- 星星計數器 -->
+                <div class="flex items-center gap-1.5 bg-amber-100 border-2 border-amber-300 px-3 py-1 rounded-full shadow-sm">
+                    <span class="text-base sm:text-lg">⭐</span>
+                    <span id="starCount" class="font-black text-amber-800 text-sm sm:text-base">0</span>
+                    <span class="text-xs font-bold text-amber-700 hidden md:inline" data-i18n="starsUnit">顆魔法星</span>
+                </div>
+
+                <!-- 童聲音域設定 -->
+                <button id="btnOpenCalibrate" class="kid-btn px-3 py-1.5 rounded-full bg-sky-100 hover:bg-sky-200 border-2 border-sky-300 text-sky-800 font-bold text-xs sm:text-sm flex items-center gap-1 shadow-sm">
+                    <span>🎛️</span>
+                    <span data-i18n="voiceSetBtn">童聲調整</span>
+                </button>
+
+                <!-- 繁簡切換 -->
+                <button id="btnToggleLang" class="kid-btn px-3 py-1.5 rounded-full bg-white hover:bg-slate-100 border-2 border-slate-200 text-slate-700 font-bold text-xs sm:text-sm shadow-sm">
+                    簡體
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- 趣味氣泡提示框 -->
+    <div id="toastContainer" class="fixed bottom-4 right-4 z-50 flex flex-col gap-2 max-w-xs w-full pointer-events-none px-4 sm:px-0"></div>
+
+    <!-- 主探險舞台 -->
+    <main class="max-w-6xl mx-auto px-4 py-5 space-y-5">
+
+        <!-- 第一關卡區：三大魔法島嶼選擇 & 趣味詞卡 -->
+        <section class="bg-white rounded-3xl border-4 border-sky-200 shadow-md p-4 sm:p-5 space-y-4">
+            <!-- 三大魔法島嶼頁籤 -->
+            <div class="grid grid-cols-1 sm:grid-cols-3 gap-2.5" id="categoryTabs">
+                <button data-cat="full" class="cat-tab active kid-btn p-3 rounded-2xl border-2 border-emerald-500 bg-emerald-500 text-white font-black text-sm sm:text-base shadow-sm flex items-center justify-center gap-2">
+                    <span class="text-xl">🎢</span>
+                    <div class="text-left">
+                        <div data-i18n="catFull">1. 過山車大轉彎 (214)</div>
+                        <div class="text-[11px] font-medium opacity-90" data-i18n="catFullSub">單字/句尾：先下谷底再飛高</div>
+                    </div>
+                </button>
+
+                <button data-cat="half" class="cat-tab kid-btn p-3 rounded-2xl border-2 border-amber-200 bg-amber-50 hover:bg-amber-100 text-amber-900 font-black text-sm sm:text-base flex items-center justify-center gap-2">
+                    <span class="text-xl">🛝</span>
+                    <div class="text-left">
+                        <div data-i18n="catHalf">2. 小滑梯半三聲 (21+X)</div>
+                        <div class="text-[11px] font-medium text-amber-700" data-i18n="catHalfSub">滑到谷底就停住，像粵語第4聲</div>
+                    </div>
+                </button>
+
+                <button data-cat="sandhi" class="cat-tab kid-btn p-3 rounded-2xl border-2 border-purple-200 bg-purple-50 hover:bg-purple-100 text-purple-900 font-black text-sm sm:text-base flex items-center justify-center gap-2">
+                    <span class="text-xl">🚀</span>
+                    <div class="text-left">
+                        <div data-i18n="catSandhi">3. 雙胞胎變身術 (35+214)</div>
+                        <div class="text-[11px] font-medium text-purple-700" data-i18n="catSandhiSub">兩個三聲在一起，前字向上飛！</div>
+                    </div>
+                </button>
+            </div>
+
+            <!-- 詞卡選擇列 + 當前挑戰大卡片 -->
+            <div class="flex flex-col lg:flex-row items-stretch lg:items-center justify-between gap-4 pt-2 border-t-2 border-dashed border-slate-100">
+                <!-- 趣味詞卡列表 -->
+                <div class="space-y-2 flex-1">
+                    <div class="flex items-center justify-between">
+                        <span class="text-xs font-extrabold text-slate-500 flex items-center gap-1">
+                            <span>🎯</span> <span data-i18n="pickCardLabel">點一點詞卡，選擇你要挑戰的寶貝：</span>
+                        </span>
+                        <!-- 自訂小詞語 -->
+                        <div class="flex items-center gap-1.5">
+                            <input type="text" id="customWordInput" placeholder="輸入漢字..." maxlength="4" class="w-24 sm:w-28 px-2.5 py-1 text-xs font-bold border-2 border-slate-200 rounded-xl focus:outline-none focus:border-sky-400">
+                            <button id="btnApplyCustom" class="kid-btn px-2.5 py-1 bg-slate-700 text-white text-xs font-bold rounded-xl" data-i18n="applyBtn">挑戰</button>
+                        </div>
+                    </div>
+                    <div id="wordChipsContainer" class="flex flex-wrap gap-2">
+                        <!-- JS 動態生成可愛圖示詞卡 -->
+                    </div>
+                </div>
+
+                <!-- 當前挑戰大字卡 -->
+                <div class="bg-gradient-to-r from-amber-100 via-yellow-50 to-orange-100 border-3 border-amber-300 rounded-2xl p-3.5 flex items-center justify-between gap-4 shrink-0 shadow-sm">
+                    <div class="flex items-center gap-3">
+                        <div id="targetEmojiDisplay" class="w-14 h-14 rounded-2xl bg-white border-2 border-amber-300 flex items-center justify-center text-3xl shadow-sm">
+                            🐻
+                        </div>
+                        <div>
+                            <div class="text-[11px] font-bold text-amber-800" data-i18n="currentChallenge">現在挑戰的詞語</div>
+                            <div class="flex items-baseline gap-2">
+                                <span id="targetWordDisplay" class="text-2xl sm:text-3xl font-black text-slate-900">小熊</span>
+                                <span id="targetPinyinDisplay" class="text-base font-bold text-orange-600">xiǎoxióng</span>
+                            </div>
+                            <div class="text-xs font-bold text-emerald-700 mt-0.5">
+                                <span data-i18n="magicRoute">魔法路線：</span><span id="targetToneDigits" class="font-mono bg-white/80 px-1.5 py-0.5 rounded border border-emerald-200">21 + 35</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 聽老師示範大按鈕 -->
+                    <button id="btnPlayTargetDemo" class="kid-btn px-4 py-3 rounded-2xl bg-gradient-to-b from-emerald-400 to-emerald-600 text-white font-black text-xs sm:text-sm shadow-md border-2 border-emerald-300 flex flex-col items-center gap-1 shrink-0">
+                        <span class="text-xl">🔊</span>
+                        <span data-i18n="listenTeacher">聽老師讀</span>
+                    </button>
+                </div>
+            </div>
+        </section>
+
+        <!-- 第二區域：聲調過山車飛行畫布（左） + 粵語小精靈魔法對照（右） -->
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-5">
+
+            <!-- 左側（7欄）：聲調過山車五度飛行軌道 -->
+            <div class="lg:col-span-7 bg-white rounded-3xl border-4 border-emerald-200 shadow-md p-4 sm:p-5 flex flex-col justify-between">
+                <div>
+                    <div class="flex flex-wrap items-center justify-between gap-2 mb-2.5">
+                        <div>
+                            <h2 class="text-base sm:text-lg font-black text-slate-800 flex items-center gap-2">
+                                <span>🎢</span>
+                                <span data-i18n="coasterTitle">聲調過山車飛行軌道（五度天空）</span>
+                                <span id="livePitchTag" class="hidden text-xs font-bold bg-rose-100 text-rose-600 px-2.5 py-0.5 rounded-full border border-rose-200">0樓</span>
+                            </h2>
+                            <p class="text-xs text-slate-500" data-i18n="coasterDesc">對著麥克風說話，讓小音符沿著綠色彩虹軌道飛翔吧！</p>
+                        </div>
+
+                        <!-- 童趣圖例 -->
+                        <div class="flex items-center gap-3 text-xs font-bold">
+                            <span class="flex items-center gap-1 text-emerald-700">
+                                <span class="w-4 h-1 border-t-4 border-dashed border-emerald-500 inline-block"></span>
+                                <span data-i18n="legendTrack">彩虹標準線</span>
+                            </span>
+                            <span class="flex items-center gap-1 text-rose-600">
+                                <span class="w-4 h-1.5 bg-rose-500 rounded-full inline-block"></span>
+                                <span data-i18n="legendNote">小音符軌跡</span>
+                            </span>
+                        </div>
+                    </div>
+
+                    <!-- 過山車天空畫布 -->
+                    <div class="relative w-full h-72 sm:h-80 rounded-2xl border-3 border-sky-200 overflow-hidden bg-gradient-to-b from-sky-100 via-sky-50 to-emerald-100/70" id="canvasContainer">
+                        <canvas id="pitchCanvas" class="w-full h-full block"></canvas>
+
+                        <!-- 錄音中動態氣泡 -->
+                        <div id="recordingOverlay" class="hidden absolute top-3 right-3 bg-rose-500 text-white text-xs font-black px-3.5 py-1.5 rounded-full shadow-md flex items-center gap-2 border-2 border-white">
+                            <span class="w-2.5 h-2.5 rounded-full bg-yellow-300 animate-ping"></span>
+                            <span id="recordingStatusText">小耳朵正在仔細聽...</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 大麥克風控制區與一鍵體驗按鈕 -->
+                <div class="mt-4 pt-3 border-t-2 border-slate-100 space-y-3">
+                    <div class="flex flex-wrap items-center justify-between gap-3">
+                        <div class="flex items-center gap-2.5">
+                            <!-- 超大錄音按鈕 -->
+                            <button id="btnRecord" class="kid-btn px-6 py-3 rounded-2xl bg-gradient-to-r from-rose-500 to-pink-500 hover:from-rose-600 hover:to-pink-600 text-white font-black text-sm sm:text-base shadow-lg border-2 border-rose-300 flex items-center gap-2">
+                                <span class="text-xl">🎤</span>
+                                <span id="btnRecordText" data-i18n="startRecord">按住/點擊開始大聲讀</span>
+                            </button>
+
+                            <!-- 聽聽自己的聲音 -->
+                            <button id="btnPlayUserAudio" disabled class="kid-btn px-3.5 py-3 rounded-2xl border-2 border-sky-200 bg-sky-50 hover:bg-sky-100 disabled:opacity-40 disabled:cursor-not-allowed text-sky-800 font-bold text-xs sm:text-sm flex items-center gap-1.5">
+                                <span class="text-base">🎧</span>
+                                <span data-i18n="replayUser">聽我的聲音</span>
+                            </button>
+                        </div>
+
+                        <!-- 能量彩虹條 -->
+                        <div class="flex items-center gap-2 flex-1 max-w-[170px]">
+                            <span class="text-xs font-bold text-slate-500 shrink-0" data-i18n="powerLabel">能量</span>
+                            <div class="w-full h-3 bg-slate-200 rounded-full overflow-hidden p-0.5 border border-slate-300">
+                                <div id="volumeBar" class="h-full bg-gradient-to-r from-amber-400 via-emerald-400 to-sky-500 rounded-full w-0 transition-all duration-75"></div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 趣味小精靈示範測試（方便小朋友或家長點擊對比正確與常見錯誤） -->
+                    <div class="bg-amber-50/90 rounded-2xl p-2.5 border-2 border-amber-200/80 flex flex-wrap items-center gap-1.5">
+                        <span class="text-xs font-black text-amber-800 flex items-center gap-1 mr-1">
+                            <span>🪄</span> <span data-i18n="demoLabel">點點看不同讀法：</span>
+                        </span>
+                        <button data-sim="std" class="sim-btn kid-btn text-xs px-2.5 py-1 rounded-xl bg-emerald-500 text-white font-bold shadow-sm" data-i18n="simStd">🌟 滿分過山車</button>
+                        <button data-sim="canto5" class="sim-btn kid-btn text-xs px-2.5 py-1 rounded-xl bg-purple-100 hover:bg-purple-200 text-purple-800 border border-purple-300 font-bold" data-i18n="simCanto5">粵語第5聲 (直接往上滑)</button>
+                        <button data-sim="canto4" class="sim-btn kid-btn text-xs px-2.5 py-1 rounded-xl bg-purple-100 hover:bg-purple-200 text-purple-800 border border-purple-300 font-bold" data-i18n="simCanto4">粵語第4聲 (只往下滑)</button>
+                        <button data-sim="noSandhi" class="sim-btn kid-btn text-xs px-2.5 py-1 rounded-xl bg-orange-100 hover:bg-orange-200 text-orange-800 border border-orange-300 font-bold" data-i18n="simNoSandhi">雙三聲忘記變身</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 右側（5欄）：粵語小精靈與普通話聲調圖鑑 -->
+            <div class="lg:col-span-5 bg-white rounded-3xl border-4 border-purple-200 shadow-md p-4 sm:p-5 flex flex-col justify-between space-y-4">
+                <!-- 普通話四座小山坡 -->
+                <div>
+                    <div class="flex items-center justify-between mb-2">
+                        <h3 class="text-sm font-black text-slate-800 flex items-center gap-1.5">
+                            <span>🏔️</span>
+                            <span data-i18n="mandarinRefTitle">普通話四座聲調山坡</span>
+                        </h3>
+                        <span class="text-[11px] font-bold text-emerald-600" data-i18n="tapToListen">點擊聽聲音</span>
+                    </div>
+                    <div class="grid grid-cols-4 gap-2" id="mandarinRefGrid">
+                        <!-- JS 動態渲染 -->
+                    </div>
+                </div>
+
+                <!-- 粵語六個好朋友 -->
+                <div>
+                    <div class="flex items-center justify-between mb-2">
+                        <h3 class="text-sm font-black text-slate-800 flex items-center gap-1.5">
+                            <span>🧚</span>
+                            <span data-i18n="cantoneseRefTitle">粵語六個聲調好朋友</span>
+                        </h3>
+                        <span class="text-[11px] font-bold text-purple-600" data-i18n="cantoHelperHint">找出誰跑來幫忙/搗蛋</span>
+                    </div>
+                    <div class="grid grid-cols-3 gap-2" id="cantoneseRefGrid">
+                        <!-- JS 動態渲染 -->
+                    </div>
+                </div>
+
+                <!-- 給小朋友的魔法順口溜 -->
+                <div class="bg-gradient-to-r from-sky-100 via-indigo-50 to-purple-100 border-2 border-indigo-200 rounded-2xl p-3 text-xs text-slate-700 space-y-1">
+                    <div class="font-black text-indigo-900 flex items-center gap-1">
+                        <span>📖</span> <span data-i18n="rhymeTitle">三聲魔法順口溜：</span>
+                    </div>
+                    <p class="leading-relaxed font-medium" data-i18n="rhymeBody">
+                        • <strong>單字三聲 (214)</strong>：坐上過山車，先下 1 樓小河谷，再衝 4 樓彩虹雲！<br>
+                        • <strong>半三聲 (21)</strong>：滑下小滑梯就停住，跟粵語<strong>第 4 聲（時/來）</strong>一模一樣！<br>
+                        • <strong>兩個三聲 (35+214)</strong>：前面字寶寶變身向上飛，變成粵語<strong>第 2 聲（史/九）</strong>！
+                    </p>
+                </div>
+            </div>
+        </div>
+
+        <!-- 第三區域：魔法老師鼓勵點評與星星獎狀 -->
+        <section id="diagnosisSection" class="bg-white rounded-3xl border-4 border-amber-200 shadow-md p-4 sm:p-5">
+            <div class="flex flex-wrap items-center justify-between gap-2 border-b-2 border-amber-100 pb-3 mb-4">
+                <div class="flex items-center gap-2.5">
+                    <div class="w-10 h-10 rounded-2xl bg-amber-400 text-white flex items-center justify-center text-2xl shadow-sm">
+                        🦉
+                    </div>
+                    <div>
+                        <h2 class="text-base sm:text-lg font-black text-slate-800" data-i18n="teacherTitle">貓頭鷹老師的魔法點評</h2>
+                        <p class="text-xs text-slate-500" data-i18n="teacherSubtitle">看看你的小音符飛到了五度天空的哪一層樓！</p>
+                    </div>
+                </div>
+                <div id="starRewardDisplay" class="flex items-center gap-1 text-2xl">
+                    <span class="opacity-30">⭐</span>
+                    <span class="opacity-30">⭐</span>
+                    <span class="opacity-30">⭐</span>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <!-- 卡片 1：小音符飛行的樓層（五度位置） -->
+                <div class="bg-sky-50/70 rounded-2xl p-4 border-2 border-sky-200 flex flex-col justify-between">
+                    <div>
+                        <div class="text-xs font-black text-sky-800 mb-1.5 flex items-center gap-1">
+                            <span>🎈</span> <span data-i18n="kidCard1">1. 小音符飛過的樓層（五度位置）</span>
+                        </div>
+                        <div class="flex items-baseline gap-2 my-1">
+                            <span id="measuredCode" class="text-3xl font-black text-sky-700 font-mono">--</span>
+                            <span class="text-xs font-bold text-slate-500">目標 <strong id="expectedCodeRef" class="text-emerald-600 font-mono">21 + 35</strong></span>
+                        </div>
+                        <div id="keyPointsDetail" class="mt-2.5 space-y-1 text-xs font-bold text-slate-700 bg-white p-2.5 rounded-xl border border-sky-200">
+                            <p class="text-slate-400 font-normal">快按「開始大聲讀」或點上方的魔法按鈕試試看吧！</p>
+                        </div>
+                    </div>
+                    <div class="mt-2.5 pt-2 border-t border-sky-200/60 flex justify-between text-[11px] font-bold text-sky-700">
+                        <span id="f0RangeMeasured">聲音高低: -- Hz</span>
+                        <span id="durationMeasured">發音長度: -- ms</span>
+                    </div>
+                </div>
+
+                <!-- 卡片 2：貓頭鷹老師鼓勵評語 -->
+                <div id="mandarinEvalCard" class="bg-emerald-50/60 rounded-2xl p-4 border-2 border-emerald-200 flex flex-col justify-between">
+                    <div>
+                        <div class="flex items-center justify-between mb-1.5">
+                            <span class="text-xs font-black text-emerald-800 flex items-center gap-1">
+                                <span>🏆</span> <span data-i18n="kidCard2">2. 普通話過關大挑戰</span>
+                            </span>
+                            <span id="mandarinScoreTag" class="text-xs font-black px-2.5 py-0.5 rounded-full bg-white text-emerald-700 border border-emerald-200">準備出發</span>
+                        </div>
+                        <h3 id="mandarinEvalHeadline" class="text-base font-black text-slate-800 mb-1.5">準備好要大聲朗讀了嗎？</h3>
+                        <p id="mandarinEvalAdvice" class="text-xs font-medium text-slate-600 leading-relaxed">
+                            貓頭鷹老師會幫你檢查：單字有沒有先滑到谷底再飛起來，連讀時有沒有變身成功！
+                        </p>
+                    </div>
+                    <div class="mt-3">
+                        <div class="w-full h-2.5 bg-white rounded-full overflow-hidden border border-emerald-200">
+                            <div id="mandarinScoreBar" class="h-full bg-gradient-to-r from-emerald-400 to-teal-500 w-0 transition-all duration-500"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 卡片 3：粵語小精靈相似性提示 -->
+                <div id="cantoneseMatchCard" class="bg-purple-50/70 rounded-2xl p-4 border-2 border-purple-200 flex flex-col justify-between">
+                    <div>
+                        <div class="flex items-center justify-between mb-1.5">
+                            <span class="text-xs font-black text-purple-800 flex items-center gap-1">
+                                <span>🧚</span> <span data-i18n="kidCard3">3. 粵語小精靈連連看</span>
+                            </span>
+                            <span id="cantoSimilarityTag" class="text-xs font-black px-2.5 py-0.5 rounded-full bg-purple-100 text-purple-700">--% 相似</span>
+                        </div>
+                        <div id="cantoMatchHeadline" class="text-base font-black text-purple-950 mb-1">
+                            看看像哪一個粵語聲調？
+                        </div>
+                        <p id="cantoMatchAnalysis" class="text-xs font-medium text-slate-700 leading-relaxed">
+                            有時候粵語好朋友會跑來幫忙（像半三聲借用第4聲），有時候也會不小心搗蛋喔！
+                        </p>
+                    </div>
+                    <div id="cantoTopMatches" class="mt-2.5 pt-2 border-t border-purple-200/60 flex flex-wrap gap-1.5 text-[11px] font-bold">
+                        <span class="text-purple-400">完成錄音後就會出現對照徽章囉</span>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+    </main>
+
+    <!-- 童聲音域調整彈窗 -->
+    <div id="calibrateModal" class="hidden fixed inset-0 z-50 bg-slate-900/50 backdrop-blur-sm flex items-center justify-center p-4">
+        <div class="bg-white rounded-3xl max-w-md w-full p-6 shadow-2xl border-4 border-sky-200 space-y-4">
+            <div class="flex items-center justify-between border-b-2 border-slate-100 pb-3">
+                <h3 class="text-lg font-black text-slate-800 flex items-center gap-2">
+                    <span>🎛️</span> <span data-i18n="modalTitle">調整小音符的飛行高度</span>
+                </h3>
+                <button id="btnCloseCalibrate" class="text-slate-400 hover:text-slate-600 text-xl font-black px-2">✕</button>
+            </div>
+            <p class="text-xs text-slate-600 leading-relaxed font-medium" data-i18n="modalDesc">
+                小朋友的聲音比較清脆高亢！選擇「兒童聲線」或「自動對齊」，小音符就能準確飛在五層雲朵之間囉。
+            </p>
+
+            <!-- 聲線快選 -->
+            <div class="grid grid-cols-3 gap-2">
+                <button data-preset="kid" class="preset-voice-btn kid-btn p-2.5 rounded-2xl border-2 border-sky-500 bg-sky-50 text-center">
+                    <div class="text-lg">🧒</div>
+                    <div class="text-xs font-black text-sky-900">兒童清脆聲</div>
+                    <div class="text-[10px] font-mono text-sky-700">180 - 380 Hz</div>
+                </button>
+                <button data-preset="adult" class="preset-voice-btn kid-btn p-2.5 rounded-2xl border-2 border-slate-200 hover:border-sky-400 text-center">
+                    <div class="text-lg">👩</div>
+                    <div class="text-xs font-black text-slate-800">家長/老師聲</div>
+                    <div class="text-[10px] font-mono text-slate-500">130 - 280 Hz</div>
+                </button>
+                <button data-preset="auto" class="preset-voice-btn kid-btn p-2.5 rounded-2xl border-2 border-slate-200 hover:border-sky-400 text-center">
+                    <div class="text-lg">✨</div>
+                    <div class="text-xs font-black text-slate-800">魔法自動對齊</div>
+                    <div class="text-[10px] font-mono text-slate-500">自動適應聲音</div>
+                </button>
+            </div>
+
+            <!-- 手動滑桿 -->
+            <div class="space-y-3 pt-1">
+                <div>
+                    <div class="flex justify-between text-xs font-bold text-slate-700 mb-1">
+                        <span>1樓小河谷（最低音）</span>
+                        <span id="minHzLabel" class="font-mono text-sky-700">180 Hz</span>
+                    </div>
+                    <input type="range" id="minHzSlider" min="80" max="240" value="180" class="w-full accent-sky-500">
+                </div>
+                <div>
+                    <div class="flex justify-between text-xs font-bold text-slate-700 mb-1">
+                        <span>5樓小鳥雲（最高音）</span>
+                        <span id="maxHzLabel" class="font-mono text-sky-700">380 Hz</span>
+                    </div>
+                    <input type="range" id="maxHzSlider" min="220" max="480" value="380" class="w-full accent-sky-500">
+                </div>
+            </div>
+
+            <div class="flex justify-end gap-2 pt-2">
+                <button id="btnSaveCalibrate" class="kid-btn px-5 py-2.5 bg-sky-500 hover:bg-sky-600 text-white text-xs sm:text-sm font-black rounded-2xl shadow">
+                    好啦，開始玩吧！
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        /**
+         * ============================================================================
+         * 1. 兒童趣味詞庫與五度聲調模型
+         * ============================================================================
+         */
+        const MANDARIN_TONES = [
+            { id: 'm1', name: '第1聲 高高飛', code: '55', desc: '平平高飛', points: [5.0, 5.0, 5.0, 5.0, 5.0], color: '#0ea5e9' },
+            { id: 'm2', name: '第2聲 爬山坡', code: '35', desc: '向上爬坡', points: [3.0, 3.4, 4.0, 4.5, 5.0], color: '#8b5cf6' },
+            { id: 'm3', name: '第3聲 過山車', code: '214', desc: '先降再升', points: [2.1, 1.3, 1.0, 2.5, 4.0], color: '#10b981' },
+            { id: 'm4', name: '第4聲 溜滑梯', code: '51', desc: '快速下滑', points: [5.0, 4.0, 3.0, 2.0, 1.0], color: '#f59e0b' }
+        ];
+
+        const CANTONESE_TONES = [
+            { id: 'c1', num: 1, name: '粵語第1聲', code: '55', example: '詩 / 夫', points: [5.0, 5.0, 5.0, 5.0, 5.0] },
+            { id: 'c2', num: 2, name: '粵語第2聲', code: '35', example: '史 / 苦', points: [3.0, 3.3, 3.8, 4.4, 5.0] },
+            { id: 'c3', num: 3, name: '粵語第3聲', code: '33', example: '試 / 富', points: [3.0, 3.0, 3.0, 3.0, 3.0] },
+            { id: 'c4', num: 4, name: '粵語第4聲', code: '21', example: '時 / 扶', points: [2.1, 1.8, 1.5, 1.2, 1.0] },
+            { id: 'c5', num: 5, name: '粵語第5聲', code: '13/23', example: '市 / 婦', points: [1.5, 1.6, 2.0, 2.5, 3.0] },
+            { id: 'c6', num: 6, name: '粵語第6聲', code: '22', example: '事 / 父', points: [2.0, 2.0, 2.0, 2.0, 2.0] }
+        ];
+
+        const WORD_BANK = {
+            full: [
+                { emoji: '👍', word: '好', pinyin: 'hǎo', code: '214', syllables: 1, targetCurve: [2.1, 1.5, 1.0, 1.8, 2.9, 4.0] },
+                { emoji: '💧', word: '水', pinyin: 'shuǐ', code: '214', syllables: 1, targetCurve: [2.1, 1.5, 1.0, 1.8, 2.9, 4.0] },
+                { emoji: '🐶', word: '狗', pinyin: 'gǒu', code: '214', syllables: 1, targetCurve: [2.1, 1.5, 1.0, 1.8, 2.9, 4.0] },
+                { emoji: '🐴', word: '馬', pinyin: 'mǎ', code: '214', syllables: 1, targetCurve: [2.1, 1.5, 1.0, 1.8, 2.9, 4.0] },
+                { emoji: '👧', word: '我', pinyin: 'wǒ', code: '214', syllables: 1, targetCurve: [2.1, 1.5, 1.0, 1.8, 2.9, 4.0] }
+            ],
+            half: [
+                { emoji: '🐻', word: '小熊', pinyin: 'xiǎoxióng', code: '21 + 35', syllables: 2, targetCurve: [2.1, 1.5, 1.0, null, 3.0, 4.0, 5.0] },
+                { emoji: '👩‍🏫', word: '老師', pinyin: 'lǎoshī', code: '21 + 55', syllables: 2, targetCurve: [2.1, 1.5, 1.0, null, 5.0, 5.0, 5.0] },
+                { emoji: '🍎', word: '好看', pinyin: 'hǎokàn', code: '21 + 51', syllables: 2, targetCurve: [2.1, 1.5, 1.0, null, 5.0, 3.0, 1.0] },
+                { emoji: '❤️', word: '喜歡', pinyin: 'xǐhuan', code: '21 + 3(輕)', syllables: 2, targetCurve: [2.1, 1.5, 1.0, null, 3.2, 3.0, 2.8] }
+            ],
+            sandhi: [
+                { emoji: '👋', word: '你好', pinyin: 'nǐhǎo', code: '35 + 214', syllables: 2, targetCurve: [3.0, 3.9, 4.9, null, 2.1, 1.0, 2.5, 4.0] },
+                { emoji: '🍎', word: '水果', pinyin: 'shuǐguǒ', code: '35 + 214', syllables: 2, targetCurve: [3.0, 3.9, 4.9, null, 2.1, 1.0, 2.5, 4.0] },
+                { emoji: '🐯', word: '老虎', pinyin: 'lǎohǔ', code: '35 + 214', syllables: 2, targetCurve: [3.0, 3.9, 4.9, null, 2.1, 1.0, 2.5, 4.0] },
+                { emoji: '☂️', word: '雨傘', pinyin: 'yǔsǎn', code: '35 + 214', syllables: 2, targetCurve: [3.0, 3.9, 4.9, null, 2.1, 1.0, 2.5, 4.0] }
+            ]
+        };
+
+        /**
+         * ============================================================================
+         * 2. 全局狀態（預設兒童音域 + 自適應校準）
+         * ============================================================================
+         */
+        const state = {
+            lang: 'zh-Hant',
+            category: 'full',
+            currentItem: WORD_BANK.full[0],
+            minHz: 180,          // 兒童預設 1 度低音
+            maxHz: 380,          // 兒童預設 5 度高音
+            autoAdaptRange: true,
+            stars: 0,
+            isRecording: false,
+            userPitchCurve: [],
+            userRawF0: [],
+            matchedCantoTone: null,
+            audioBlobUrl: null,
+            audioCtx: null,
+            noiseFloorRms: 0.018
+        };
+
+        const I18N_MAP = {
+            'zh-Hant': {
+                appTitle: '小音符大冒險',
+                appBadge: '普通話三聲樂園',
+                appSubtitle: '坐上聲調過山車，跟粵語小精靈一起學好普通話三聲！',
+                starsUnit: '顆魔法星',
+                voiceSetBtn: '童聲調整',
+                catFull: '1. 過山車大轉彎 (214)',
+                catFullSub: '單字/句尾：先下谷底再飛高',
+                catHalf: '2. 小滑梯半三聲 (21+X)',
+                catHalfSub: '滑到谷底就停住，像粵語第4聲',
+                catSandhi: '3. 雙胞胎變身術 (35+214)',
+                catSandhiSub: '兩個三聲在一起，前字向上飛！',
+                pickCardLabel: '點一點詞卡，選擇你要挑戰的寶貝：',
+                applyBtn: '挑戰',
+                currentChallenge: '現在挑戰的詞語',
+                magicRoute: '魔法路線：',
+                listenTeacher: '聽老師讀',
+                coasterTitle: '聲調過山車飛行軌道（五度天空）',
+                coasterDesc: '對著麥克風說話，讓小音符沿著綠色彩虹軌道飛翔吧！',
+                legendTrack: '彩虹標準線',
+                legendNote: '小音符軌跡',
+                startRecord: '點擊開始大聲讀',
+                stopRecord: '讀完啦，點這裡！',
+                replayUser: '聽我的聲音',
+                powerLabel: '能量',
+                demoLabel: '點點看不同讀法：',
+                simStd: '🌟 滿分過山車',
+                simCanto5: '粵語第5聲 (直接往上滑)',
+                simCanto4: '粵語第4聲 (只往下滑)',
+                simNoSandhi: '雙三聲忘記變身',
+                mandarinRefTitle: '普通話四座聲調山坡',
+                tapToListen: '點擊聽聲音',
+                cantoneseRefTitle: '粵語六個聲調好朋友',
+                cantoHelperHint: '找出誰跑來幫忙/搗蛋',
+                rhymeTitle: '三聲魔法順口溜：',
+                rhymeBody: '• <strong>單字三聲 (214)</strong>：坐上過山車，先下 1 樓小河谷，再衝 4 樓彩虹雲！<br>• <strong>半三聲 (21)</strong>：滑下小滑梯就停住，跟粵語<strong>第 4 聲（時/來）</strong>一模一樣！<br>• <strong>兩個三聲 (35+214)</strong>：前面字寶寶變身向上飛，變成粵語<strong>第 2 聲（史/九）</strong>！',
+                teacherTitle: '貓頭鷹老師的魔法點評',
+                teacherSubtitle: '看看你的小音符飛到了五度天空的哪一層樓！',
+                kidCard1: '1. 小音符飛過的樓層（五度位置）',
+                kidCard2: '2. 普通話過關大挑戰',
+                kidCard3: '3. 粵語小精靈連連看',
+                modalTitle: '調整小音符的飛行高度',
+                modalDesc: '小朋友的聲音比較清脆高亢！選擇「兒童聲線」或「魔法自動對齊」，小音符就能準確飛在五層雲朵之間囉。'
+            },
+            'zh-Hans': {
+                appTitle: '小音符大冒险',
+                appBadge: '普通话三声乐园',
+                appSubtitle: '坐上声调过山车，跟粤语小精灵一起学好普通话三声！',
+                starsUnit: '颗魔法星',
+                voiceSetBtn: '童声调整',
+                catFull: '1. 过山车大转弯 (214)',
+                catFullSub: '单字/句尾：先下谷底再飞高',
+                catHalf: '2. 小滑梯半三声 (21+X)',
+                catHalfSub: '滑到谷底就停住，像粤语第4声',
+                catSandhi: '3. 双胞胎变身术 (35+214)',
+                catSandhiSub: '两个三声在一起，前字向上飞！',
+                pickCardLabel: '点一点词卡，选择你要挑战的宝贝：',
+                applyBtn: '挑战',
+                currentChallenge: '现在挑战的词语',
+                magicRoute: '魔法路线：',
+                listenTeacher: '听老师读',
+                coasterTitle: '声调过山车飞行轨道（五度天空）',
+                coasterDesc: '对着麦克风说话，让小音符沿着绿色彩虹轨道飞翔吧！',
+                legendTrack: '彩虹标准线',
+                legendNote: '小音符轨迹',
+                startRecord: '点击开始大声读',
+                stopRecord: '读完啦，点这里！',
+                replayUser: '听我的声音',
+                powerLabel: '能量',
+                demoLabel: '点点看不同读法：',
+                simStd: '🌟 满分过山车',
+                simCanto5: '粤语第5声 (直接往上滑)',
+                simCanto4: '粤语第4声 (只往下滑)',
+                simNoSandhi: '双三声忘记变身',
+                mandarinRefTitle: '普通话四座声调山坡',
+                tapToListen: '点击听声音',
+                cantoneseRefTitle: '粤语六个声调好朋友',
+                cantoHelperHint: '找出谁跑来帮忙/捣蛋',
+                rhymeTitle: '三声魔法顺口溜：',
+                rhymeBody: '• <strong>单字三声 (214)</strong>：坐上过山车，先下 1 楼小河谷，再冲 4 楼彩虹云！<br>• <strong>半三声 (21)</strong>：滑下小滑梯就停住，跟粤语<strong>第 4 声（时/来）</strong>一模一样！<br>• <strong>两个三声 (35+214)</strong>：前面字宝宝变身向上飞，变成粤语<strong>第 2 声（史/九）</strong>！',
+                teacherTitle: '猫头鹰老师的魔法点评',
+                teacherSubtitle: '看看你的小音符飞到了五度天空的哪一层楼！',
+                kidCard1: '1. 小音符飞过的楼层（五度位置）',
+                kidCard2: '2. 普通话过关大挑战',
+                kidCard3: '3. 粤语小精灵连连看',
+                modalTitle: '调整小音符的飞行高度',
+                modalDesc: '小朋友的声音比较清脆高亢！选择“儿童声线”或“魔法自动对齐”，小音符就能准确飞在五层云朵之间啦。'
+            }
+        };
+
+        const T2S_CHARS = {'語':'语','音':'音','檢測':'检测','標準':'标准','調':'调','聲':'声','變':'变','粵':'粤','實':'实','測':'测','點':'点','最低':'最低','起點':'起点','終點':'终点','轉折':'转折','高':'高','低':'低','降':'降','升':'升','平':'平','相似':'相似','度':'度','誤':'误','讀':'读','為':'为','應':'应','該':'该','先':'先','後':'后','沉':'沉','底':'底','挑':'挑','起':'起','借':'借','用':'用','連':'连','單':'单','字':'字','詞':'词','與':'与','對':'对','比':'比','優':'优','秀':'秀','符':'符','合':'合','基':'基','本':'本','達':'达','標':'标','存':'存','在':'在','偏':'偏','警':'警','告':'告','示':'示','范':'范','錄':'录','範':'范','圍':'围','時':'时','長':'长','無':'无','法':'法','識':'识','別':'别','請':'请','靠':'靠','近':'近','麥':'麦','克':'克','風':'风','清':'清','晰':'晰','發':'发','老':'老','師':'师','美':'美','國':'国','看':'看','喜':'喜','歡':'欢','你':'你','好':'好','水':'水','果':'果','可':'可','以':'以','手':'手','錶':'表','買':'买','想':'想','我':'我','陰':'阴','陽':'阳','上':'上','去':'去','婦':'妇','市':'市','來':'来','史':'史','苦':'苦','試':'试','富':'富','扶':'扶','事':'事','父':'父','詩':'诗','夫':'夫','馬':'马','傘':'伞','樓':'楼','雲':'云','鳥':'鸟','飛':'飞','貓':'猫','頭':'头','鷹':'鹰','滿':'满','棒':'棒','厲':'厉','害':'害','幫':'帮','忙':'忙','搗':'捣','蛋':'蛋'};
+        function localizeText(str) {
+            if (state.lang === 'zh-Hant') return str;
+            let res = str;
+            for (const [trad, simp] of Object.entries(T2S_CHARS)) {
+                res = res.split(trad).join(simp);
+            }
+            return res;
+        }
+
+        function showToast(msg, emoji = '✨') {
+            const container = document.getElementById('toastContainer');
+            const toast = document.createElement('div');
+            toast.className = 'pointer-events-auto px-4 py-3 rounded-2xl shadow-xl border-2 border-amber-300 bg-white text-slate-800 text-xs sm:text-sm font-black flex items-center gap-2.5 transition-all duration-300 transform translate-y-2 opacity-0';
+            toast.innerHTML = `<span class="text-xl">${emoji}</span><span>${localizeText(msg)}</span>`;
+            container.appendChild(toast);
+            requestAnimationFrame(() => toast.classList.remove('translate-y-2', 'opacity-0'));
+            setTimeout(() => {
+                toast.classList.add('opacity-0', 'translate-y-2');
+                setTimeout(() => toast.remove(), 300);
+            }, 3200);
+        }
+
+        /**
+         * ============================================================================
+         * 3. 音訊核心：標準普通話發音 + 魔法慶祝音效 + 抗噪基頻提取
+         * ============================================================================
+         */
+        function getAudioContext() {
+            if (!state.audioCtx) {
+                const AudioCtx = window.AudioContext || window.webkitAudioContext;
+                state.audioCtx = new AudioCtx();
+            }
+            if (state.audioCtx.state === 'suspended') {
+                state.audioCtx.resume();
+            }
+            return state.audioCtx;
+        }
+
+        function hzToDegree(hz) {
+            if (!hz || hz <= 0) return 1.0;
+            const minLog = Math.log2(state.minHz);
+            const maxLog = Math.log2(state.maxHz);
+            const valLog = Math.log2(hz);
+            const ratio = (valLog - minLog) / Math.max(0.01, maxLog - minLog);
+            return Math.max(1.0, Math.min(5.0, 1.0 + ratio * 4.0));
+        }
+
+        function degreeToHz(deg) {
+            const clamped = Math.max(1.0, Math.min(5.0, deg));
+            const ratio = (clamped - 1.0) / 4.0;
+            const minLog = Math.log2(state.minHz);
+            const maxLog = Math.log2(state.maxHz);
+            return Math.pow(2, minLog + ratio * (maxLog - minLog));
+        }
+
+        // 播放贏得星星的清脆豎琴音效
+        function playCelebrationChime() {
+            try {
+                const ctx = getAudioContext();
+                const notes = [523.25, 659.25, 783.99, 1046.50]; // C5 E5 G5 C6
+                notes.forEach((freq, idx) => {
+                    const osc = ctx.createOscillator();
+                    const gain = ctx.createGain();
+                    osc.type = 'sine';
+                    osc.frequency.setValueAtTime(freq, ctx.currentTime + idx * 0.08);
+                    gain.gain.setValueAtTime(0.001, ctx.currentTime + idx * 0.08);
+                    gain.gain.linearRampToValueAtTime(0.18, ctx.currentTime + idx * 0.08 + 0.02);
+                    gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + idx * 0.08 + 0.35);
+                    osc.connect(gain);
+                    gain.connect(ctx.destination);
+                    osc.start(ctx.currentTime + idx * 0.08);
+                    osc.stop(ctx.currentTime + idx * 0.08 + 0.38);
+                });
+            } catch (e) {}
+        }
+
+        // 播放普通話標準發音（親切童趣語速）
+        function playStandardPronunciation(wordText, fallbackCurve) {
+            if ('speechSynthesis' in window && wordText) {
+                try {
+                    window.speechSynthesis.cancel();
+                    const utterance = new SpeechSynthesisUtterance(wordText);
+                    utterance.lang = 'zh-CN';
+                    utterance.rate = 0.80;
+                    utterance.pitch = 1.15; // 略微親切明亮的音色
+
+                    const voices = window.speechSynthesis.getVoices();
+                    const mandarinVoice = voices.find(v =>
+                        (v.lang === 'zh-CN' || v.lang === 'cmn-Hans-CN' || v.lang.toLowerCase().includes('zh-cn')) &&
+                        !v.name.toLowerCase().includes('cantonese') &&
+                        !v.name.includes('粵')
+                    ) || voices.find(v => v.lang.startsWith('zh') && !v.lang.includes('HK') && !v.lang.includes('MO'));
+
+                    if (mandarinVoice) utterance.voice = mandarinVoice;
+                    utterance.onerror = () => playToneCurve(fallbackCurve, 0.8);
+                    window.speechSynthesis.speak(utterance);
+                    return;
+                } catch (err) {}
+            }
+            playToneCurve(fallbackCurve, 0.8);
+        }
+
+        function playToneCurve(points, totalDuration = 0.75) {
+            try {
+                const ctx = getAudioContext();
+                const now = ctx.currentTime;
+                const osc = ctx.createOscillator();
+                const gain = ctx.createGain();
+                osc.type = 'triangle';
+
+                const filter = ctx.createBiquadFilter();
+                filter.type = 'lowpass';
+                filter.frequency.value = 720;
+
+                osc.connect(filter);
+                filter.connect(gain);
+                gain.connect(ctx.destination);
+
+                const splitIdx = points.indexOf(null);
+                if (splitIdx === -1) {
+                    const validPts = points.filter(p => p !== null);
+                    const step = totalDuration / (validPts.length - 1);
+                    gain.gain.setValueAtTime(0.001, now);
+                    gain.gain.linearRampToValueAtTime(0.26, now + 0.04);
+                    gain.gain.setValueAtTime(0.26, now + totalDuration - 0.06);
+                    gain.gain.exponentialRampToValueAtTime(0.001, now + totalDuration);
+
+                    osc.frequency.setValueAtTime(degreeToHz(validPts[0]), now);
+                    for (let i = 1; i < validPts.length; i++) {
+                        osc.frequency.linearRampToValueAtTime(degreeToHz(validPts[i]), now + i * step);
+                    }
+                    osc.start(now);
+                    osc.stop(now + totalDuration + 0.02);
+                } else {
+                    const part1 = points.slice(0, splitIdx);
+                    const part2 = points.slice(splitIdx + 1);
+                    const dur1 = 0.42, gap = 0.07, dur2 = 0.55;
+                    const total = dur1 + gap + dur2;
+
+                    gain.gain.setValueAtTime(0.001, now);
+                    gain.gain.linearRampToValueAtTime(0.26, now + 0.03);
+                    gain.gain.setValueAtTime(0.26, now + dur1 - 0.04);
+                    gain.gain.linearRampToValueAtTime(0.005, now + dur1);
+                    gain.gain.setValueAtTime(0.005, now + dur1 + gap);
+                    gain.gain.linearRampToValueAtTime(0.26, now + dur1 + gap + 0.03);
+                    gain.gain.setValueAtTime(0.26, now + total - 0.05);
+                    gain.gain.exponentialRampToValueAtTime(0.001, now + total);
+
+                    const step1 = dur1 / Math.max(1, part1.length - 1);
+                    osc.frequency.setValueAtTime(degreeToHz(part1[0]), now);
+                    for (let i = 1; i < part1.length; i++) {
+                        osc.frequency.linearRampToValueAtTime(degreeToHz(part1[i]), now + i * step1);
+                    }
+
+                    const start2 = now + dur1 + gap;
+                    const step2 = dur2 / Math.max(1, part2.length - 1);
+                    osc.frequency.setValueAtTime(degreeToHz(part2[0]), start2);
+                    for (let i = 1; i < part2.length; i++) {
+                        osc.frequency.linearRampToValueAtTime(degreeToHz(part2[i]), start2 + i * step2);
+                    }
+                    osc.start(now);
+                    osc.stop(now + total + 0.02);
+                }
+            } catch (e) {}
+        }
+
+        /**
+         * ============================================================================
+         * 4. 繪製童趣圖鑑小卡片 (普通話四座山坡 & 粵語六個聲調好朋友)
+         * ============================================================================
+         */
+        function createMiniToneSVG(points, strokeColor) {
+            const w = 80, h = 50, padX = 10, padY = 6;
+            const usableW = w - padX * 2, usableH = h - padY * 2;
+            let gridLines = '';
+            for (let d = 1; d <= 5; d++) {
+                const y = padY + ((5 - d) / 4) * usableH;
+                gridLines += `<line x1="${padX}" y1="${y}" x2="${w - padX}" y2="${y}" stroke="#e2e8f0" stroke-width="1" />`;
+            }
+            const coords = points.map((p, idx) => {
+                const x = padX + (idx / (points.length - 1)) * usableW;
+                const y = padY + ((5 - p) / 4) * usableH;
+                return `${x.toFixed(1)},${y.toFixed(1)}`;
+            });
+            const lastPt = coords[coords.length - 1].split(',');
+            return `
+                <svg viewBox="0 0 ${w} ${h}" class="w-full h-11 overflow-visible">
+                    ${gridLines}
+                    <polyline fill="none" stroke="${strokeColor}" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round" points="${coords.join(' ')}" />
+                    <circle cx="${lastPt[0]}" cy="${lastPt[1]}" r="3.5" fill="${strokeColor}" />
+                </svg>
+            `;
+        }
+
+        function renderReferenceCharts() {
+            const mGrid = document.getElementById('mandarinRefGrid');
+            mGrid.innerHTML = MANDARIN_TONES.map(t => `
+                <button onclick="playToneCurve([${t.points.join(',')}], 0.65)" class="kid-btn p-2 rounded-2xl border-2 border-slate-200 hover:border-emerald-400 bg-sky-50/40 text-left flex flex-col justify-between">
+                    <div class="flex items-center justify-between w-full">
+                        <span class="text-[11px] font-black text-slate-800">${localizeText(t.name.split(' ')[0])}</span>
+                        <span class="text-[10px] font-mono font-black text-emerald-700 bg-emerald-100 px-1 rounded">${t.code}</span>
+                    </div>
+                    ${createMiniToneSVG(t.points, t.color)}
+                    <div class="text-[10px] font-bold text-slate-500 text-center">${localizeText(t.desc)}</div>
+                </button>
+            `).join('');
+
+            const cGrid = document.getElementById('cantoneseRefGrid');
+            cGrid.innerHTML = CANTONESE_TONES.map(t => `
+                <button onclick="playToneCurve([${t.points.join(',')}], 0.65)" class="kid-btn p-2 rounded-2xl border-2 border-purple-100 hover:border-purple-400 bg-purple-50/40 text-left flex flex-col justify-between">
+                    <div class="flex items-center justify-between w-full">
+                        <span class="text-[11px] font-black text-purple-900">${localizeText(t.name)}</span>
+                        <span class="text-[10px] font-mono font-black text-purple-700 bg-purple-100 px-1 rounded">${t.code}</span>
+                    </div>
+                    ${createMiniToneSVG(t.points, '#9333ea')}
+                    <div class="text-[10px] font-bold text-slate-500 text-center">${localizeText(t.example)}</div>
+                </button>
+            `).join('');
+        }
+
+        /**
+         * ============================================================================
+         * 5. 童趣「聲調過山車」五度天空畫布 (Canvas)
+         * ============================================================================
+         */
+        const canvas = document.getElementById('pitchCanvas');
+        const ctx = canvas.getContext('2d');
+
+        function resizeCanvas() {
+            const container = document.getElementById('canvasContainer');
+            const dpr = window.devicePixelRatio || 1;
+            const rect = container.getBoundingClientRect();
+            canvas.width = rect.width * dpr;
+            canvas.height = rect.height * dpr;
+            ctx.scale(dpr, dpr);
+            drawPitchChart();
+        }
+
+        function drawPitchChart() {
+            const container = document.getElementById('canvasContainer');
+            const w = container.getBoundingClientRect().width;
+            const h = container.getBoundingClientRect().height;
+            ctx.clearRect(0, 0, w, h);
+
+            const padLeft = 74;
+            const padRight = 38;
+            const padTop = 26;
+            const padBottom = 28;
+            const chartW = w - padLeft - padRight;
+            const chartH = h - padTop - padBottom;
+
+            const floorLabels = [
+                '5樓 小鳥雲 🕊️',
+                '4樓 彩虹雲 🌈',
+                '3樓 風箏雲 🪁',
+                '2樓 小草坡 🌱',
+                '1樓 小河谷 🏞️'
+            ];
+            const degToY = (deg) => padTop + ((5.0 - deg) / 4.0) * chartH;
+
+            // 1. 繪製五層天空樓層軌道
+            ctx.font = 'bold 11px "Noto Sans TC", sans-serif';
+            for (let i = 0; i < 5; i++) {
+                const deg = 5 - i;
+                const y = degToY(deg);
+
+                ctx.beginPath();
+                ctx.strokeStyle = deg === 1 ? '#10b981' : (deg === 5 ? '#38bdf8' : '#cbd5e1');
+                ctx.lineWidth = deg === 1 || deg === 5 ? 2 : 1.2;
+                ctx.setLineDash(deg === 1 || deg === 5 ? [] : [5, 5]);
+                ctx.moveTo(padLeft, y);
+                ctx.lineTo(w - padRight, y);
+                ctx.stroke();
+
+                // 左側樓層圖示標籤
+                ctx.fillStyle = '#334155';
+                ctx.textAlign = 'right';
+                ctx.textBaseline = 'middle';
+                ctx.fillText(localizeText(floorLabels[i]), padLeft - 8, y);
+
+                // 右側樓層數字徽章
+                ctx.fillStyle = '#0284c7';
+                ctx.font = '900 12px monospace';
+                ctx.textAlign = 'left';
+                ctx.fillText(`${deg}F`, w - padRight + 8, y);
+                ctx.font = 'bold 11px "Noto Sans TC", sans-serif';
+            }
+
+            // 2. 繪製綠色彩虹標準過山車軌道
+            const target = state.currentItem.targetCurve;
+            if (target && target.length > 0) {
+                drawSmoothCurveOnCanvas(target, padLeft, chartW, degToY, {
+                    strokeStyle: '#10b981',
+                    lineWidth: 5,
+                    dash: [10, 7],
+                    drawNodes: true
+                });
+            }
+
+            // 3. 若有相似的粵語小精靈，繪製紫色虛線提示
+            if (state.matchedCantoTone && state.userPitchCurve.length > 0) {
+                const cantoPts = state.matchedCantoTone.points;
+                const subW = state.currentItem.syllables === 2 ? chartW * 0.45 : chartW;
+                drawSmoothCurveOnCanvas(cantoPts, padLeft, subW, degToY, {
+                    strokeStyle: '#a855f7',
+                    lineWidth: 3,
+                    dash: [3, 5],
+                    drawNodes: false
+                });
+            }
+
+            // 4. 繪製小朋友的實測曲線與「小音符精靈 🎵」
+            if (state.userPitchCurve && state.userPitchCurve.length > 1) {
+                drawSmoothCurveOnCanvas(state.userPitchCurve, padLeft, chartW, degToY, {
+                    strokeStyle: '#f43f5e',
+                    lineWidth: 4.5,
+                    dash: [],
+                    drawNodes: false,
+                    glow: true,
+                    drawMascot: true
+                });
+            }
+        }
+
+        function drawSmoothCurveOnCanvas(points, startX, width, degToY, opts) {
+            ctx.save();
+            ctx.strokeStyle = opts.strokeStyle;
+            ctx.lineWidth = opts.lineWidth;
+            ctx.lineCap = 'round';
+            ctx.lineJoin = 'round';
+            ctx.setLineDash(opts.dash || []);
+
+            if (opts.glow) {
+                ctx.shadowColor = 'rgba(244, 63, 94, 0.35)';
+                ctx.shadowBlur = 10;
+            }
+
+            const segments = [];
+            let currentSeg = [];
+            const totalLen = points.length;
+
+            points.forEach((val, idx) => {
+                if (val === null) {
+                    if (currentSeg.length > 0) segments.push(currentSeg);
+                    currentSeg = [];
+                } else {
+                    const x = startX + (idx / Math.max(1, totalLen - 1)) * width;
+                    const y = degToY(val);
+                    currentSeg.push({ x, y, val });
+                }
+            });
+            if (currentSeg.length > 0) segments.push(currentSeg);
+
+            let lastPoint = null;
+            segments.forEach(seg => {
+                if (seg.length === 0) return;
+                ctx.beginPath();
+                ctx.moveTo(seg[0].x, seg[0].y);
+                for (let i = 1; i < seg.length; i++) {
+                    ctx.lineTo(seg[i].x, seg[i].y);
+                }
+                ctx.stroke();
+                lastPoint = seg[seg.length - 1];
+
+                if (opts.drawNodes) {
+                    ctx.setLineDash([]);
+                    seg.forEach((pt, idx) => {
+                        if (idx === 0 || idx === seg.length - 1 || pt.val <= 1.05) {
+                            ctx.beginPath();
+                            ctx.fillStyle = '#fef08a';
+                            ctx.arc(pt.x, pt.y, 5, 0, Math.PI * 2);
+                            ctx.fill();
+                            ctx.stroke();
+                        }
+                    });
+                    ctx.setLineDash(opts.dash || []);
+                }
+            });
+
+            // 在實測曲線終點畫出可愛的小音符精靈
+            if (opts.drawMascot && lastPoint) {
+                ctx.shadowBlur = 0;
+                ctx.font = '20px sans-serif';
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+                ctx.fillText('🎵', lastPoint.x, lastPoint.y - 12);
+            }
+
+            ctx.restore();
+        }
+
+        /**
+         * ============================================================================
+         * 6. 抗噪基頻檢測與起始音高穩定引擎（專為童聲高基頻優化至 650Hz）
+         * ============================================================================
+         */
+        function autoCorrelate(buf, sampleRate, minRmsThreshold = 0.018) {
+            const SIZE = buf.length;
+            let rms = 0;
+            for (let i = 0; i < SIZE; i++) rms += buf[i] * buf[i];
+            rms = Math.sqrt(rms / SIZE);
+            if (rms < minRmsThreshold) return -1;
+
+            let mean = 0;
+            for (let i = 0; i < SIZE; i++) mean += buf[i];
+            mean /= SIZE;
+
+            const cleanBuf = new Float32Array(SIZE);
+            for (let i = 0; i < SIZE; i++) cleanBuf[i] = buf[i] - mean;
+
+            // 支援兒童高音基頻 (80Hz - 620Hz)
+            const minLag = Math.floor(sampleRate / 620);
+            const maxLag = Math.min(Math.floor(SIZE / 2), Math.floor(sampleRate / 80));
+            if (maxLag <= minLag) return -1;
+
+            const nsdf = new Float32Array(maxLag + 1);
+            for (let tau = minLag; tau <= maxLag; tau++) {
+                let acf = 0, divisorM = 0;
+                const len = SIZE - tau;
+                for (let i = 0; i < len; i++) {
+                    const x1 = cleanBuf[i], x2 = cleanBuf[i + tau];
+                    acf += x1 * x2;
+                    divisorM += x1 * x1 + x2 * x2;
+                }
+                nsdf[tau] = divisorM > 0 ? (2 * acf) / divisorM : 0;
+            }
+
+            let inPositiveRegion = false, localMaxClarity = -1, localMaxTau = -1;
+            const peaks = [];
+            for (let tau = minLag; tau <= maxLag; tau++) {
+                const val = nsdf[tau];
+                if (val > 0) {
+                    inPositiveRegion = true;
+                    if (val > localMaxClarity) {
+                        localMaxClarity = val;
+                        localMaxTau = tau;
+                    }
+                } else if (inPositiveRegion) {
+                    if (localMaxClarity > 0.5) peaks.push({ tau: localMaxTau, clarity: localMaxClarity });
+                    inPositiveRegion = false;
+                    localMaxClarity = -1;
+                }
+            }
+
+            if (peaks.length === 0) return -1;
+            const overallMaxClarity = Math.max(...peaks.map(p => p.clarity));
+            if (overallMaxClarity < 0.83) return -1;
+
+            // 次諧波真基頻鎖定，避免起音抓到倍頻
+            let chosenPeak = peaks.find(p => p.clarity >= overallMaxClarity * 0.92) || peaks[0];
+            for (let i = peaks.length - 1; i >= 0; i--) {
+                const candidate = peaks[i];
+                if (candidate.tau > chosenPeak.tau * 1.75 && candidate.clarity >= overallMaxClarity * 0.88) {
+                    chosenPeak = candidate;
+                    break;
+                }
+            }
+
+            let T0 = chosenPeak.tau;
+            if (T0 > minLag && T0 < maxLag) {
+                const x1 = nsdf[T0 - 1], x2 = nsdf[T0], x3 = nsdf[T0 + 1];
+                const a = (x1 + x3 - 2 * x2) / 2;
+                const b = (x3 - x1) / 2;
+                if (a < 0) T0 = T0 - b / (2 * a);
+            }
+
+            const freq = sampleRate / T0;
+            return (freq >= 80 && freq <= 620) ? freq : -1;
+        }
+
+        function removeOctaveErrors(hzArr) {
+            if (hzArr.length < 3) return hzArr;
+            const sorted = [...hzArr].sort((a, b) => a - b);
+            const median = sorted[Math.floor(sorted.length / 2)];
+            return hzArr.map(hz => {
+                if (hz > median * 1.75) return hz / 2;
+                if (hz < median * 0.58) return hz * 2;
+                return hz;
+            });
+        }
+
+        function smoothArray(arr) {
+            if (arr.length < 3) return arr;
+            const out = [arr[0]];
+            for (let i = 1; i < arr.length - 1; i++) {
+                out.push((arr[i - 1] + arr[i] * 2 + arr[i + 1]) / 4);
+            }
+            out.push(arr[arr.length - 1]);
+            return out;
+        }
+
+        function stabilizeOnsetAndTail(degArr) {
+            if (degArr.length < 6) return degArr;
+            const out = [...degArr];
+            const stableStartIdx = Math.min(2, Math.floor(out.length * 0.15));
+            const stableEndIdx = Math.min(out.length - 1, stableStartIdx + 4);
+            const onsetWindow = out.slice(stableStartIdx, stableEndIdx + 1).sort((a, b) => a - b);
+            const onsetMedian = onsetWindow[Math.floor(onsetWindow.length / 2)];
+
+            for (let i = 0; i < stableStartIdx; i++) {
+                if (Math.abs(out[i] - onsetMedian) > 0.4) out[i] = onsetMedian;
+            }
+            const tailWindow = out.slice(Math.max(0, out.length - 4), out.length - 1).sort((a, b) => a - b);
+            const tailMedian = tailWindow[Math.floor(tailWindow.length / 2)];
+            if (Math.abs(out[out.length - 1] - tailMedian) > 0.65) out[out.length - 1] = tailMedian;
+            return out;
+        }
+
+        function adaptPitchRangeFromSpeech(hzArr) {
+            const sorted = [...hzArr].sort((a, b) => a - b);
+            const p10 = sorted[Math.floor(sorted.length * 0.1)];
+            const p90 = sorted[Math.floor(sorted.length * 0.9)];
+            const median = sorted[Math.floor(sorted.length * 0.5)];
+            const estimatedMin = Math.max(85, Math.min(p10 * 0.94, median * 0.72));
+            const estimatedMax = Math.max(estimatedMin * 1.95, p90 * 1.08);
+            state.minHz = Math.round(estimatedMin);
+            state.maxHz = Math.round(estimatedMax);
+        }
+
+        function resampleArray(arr, targetLen) {
+            if (arr.length === 0) return [];
+            if (arr.length === 1) return new Array(targetLen).fill(arr[0]);
+            const out = [];
+            for (let i = 0; i < targetLen; i++) {
+                const pos = (i / (targetLen - 1)) * (arr.length - 1);
+                const idx = Math.floor(pos);
+                const frac = pos - idx;
+                const v1 = arr[idx];
+                const v2 = arr[Math.min(arr.length - 1, idx + 1)];
+                out.push(v1 + (v2 - v1) * frac);
+            }
+            return out;
+        }
+
+        let mediaStream = null, mediaRecorder = null, audioChunks = [], analyser = null;
+        let rafId = null, recordedF0Samples = [], recordStartTime = 0, calibrationFrames = [];
+
+        function updateRecordUI(recording) {
+            const btn = document.getElementById('btnRecord');
+            const btnText = document.getElementById('btnRecordText');
+            const overlay = document.getElementById('recordingOverlay');
+            const liveTag = document.getElementById('livePitchTag');
+
+            if (recording) {
+                btn.classList.add('recording-mic', 'from-slate-800', 'to-slate-900');
+                btn.classList.remove('from-rose-500', 'to-pink-500');
+                btnText.textContent = I18N_MAP[state.lang].stopRecord;
+                overlay.classList.remove('hidden');
+            } else {
+                btn.classList.remove('recording-mic', 'from-slate-800', 'to-slate-900');
+                btn.classList.add('from-rose-500', 'to-pink-500');
+                btnText.textContent = I18N_MAP[state.lang].startRecord;
+                overlay.classList.add('hidden');
+                liveTag.classList.add('hidden');
+            }
+        }
+
+        async function toggleRecording() {
+            if (state.isRecording) stopRecording();
+            else await startRecording();
+        }
+
+        async function startRecording() {
+            try {
+                const ctx = getAudioContext();
+                mediaStream = await navigator.mediaDevices.getUserMedia({
+                    audio: { echoCancellation: true, noiseSuppression: true, autoGainControl: false }
+                });
+
+                const source = ctx.createMediaStreamSource(mediaStream);
+                const highPass = ctx.createBiquadFilter();
+                highPass.type = 'highpass';
+                highPass.frequency.value = 90;
+
+                const lowPass = ctx.createBiquadFilter();
+                lowPass.type = 'lowpass';
+                lowPass.frequency.value = 1100;
+
+                analyser = ctx.createAnalyser();
+                analyser.fftSize = 2048;
+
+                source.connect(highPass);
+                highPass.connect(lowPass);
+                lowPass.connect(analyser);
+
+                audioChunks = [];
+                mediaRecorder = null;
+                if (typeof MediaRecorder !== 'undefined') {
+                    try {
+                        const mimeTypes = ['audio/webm;codecs=opus', 'audio/webm', 'audio/mp4', ''];
+                        const supportedType = typeof MediaRecorder.isTypeSupported === 'function'
+                            ? (mimeTypes.find(t => t === '' || MediaRecorder.isTypeSupported(t)) || '')
+                            : '';
+                        mediaRecorder = supportedType
+                            ? new MediaRecorder(mediaStream, { mimeType: supportedType })
+                            : new MediaRecorder(mediaStream);
+                        mediaRecorder.ondataavailable = (e) => { if (e.data && e.data.size > 0) audioChunks.push(e.data); };
+                        mediaRecorder.onstop = () => {
+                            if (audioChunks.length > 0) {
+                                const blob = new Blob(audioChunks, { type: mediaRecorder.mimeType || 'audio/webm' });
+                                if (state.audioBlobUrl) URL.revokeObjectURL(state.audioBlobUrl);
+                                state.audioBlobUrl = URL.createObjectURL(blob);
+                                document.getElementById('btnPlayUserAudio').disabled = false;
+                            }
+                        };
+                    } catch (e) { mediaRecorder = null; }
+                }
+
+                recordedF0Samples = [];
+                calibrationFrames = [];
+                state.noiseFloorRms = 0.018;
+                state.userPitchCurve = [];
+                state.matchedCantoTone = null;
+                state.isRecording = true;
+                recordStartTime = performance.now();
+
+                if (mediaRecorder) {
+                    try { mediaRecorder.start(); } catch (e) { mediaRecorder = null; }
+                }
+                updateRecordUI(true);
+                analyzeAudioFrame();
+
+                setTimeout(() => { if (state.isRecording) stopRecording(); }, 4000);
+            } catch (err) {
+                showToast('小耳朵還沒打開麥克風權限喔，先點點看「點點看不同讀法」玩吧！', '🎤');
+            }
+        }
+
+        function analyzeAudioFrame() {
+            if (!state.isRecording) return;
+            const buffer = new Float32Array(analyser.fftSize);
+            analyser.getFloatTimeDomainData(buffer);
+
+            let sum = 0;
+            for (let i = 0; i < buffer.length; i++) sum += buffer[i] * buffer[i];
+            const rms = Math.sqrt(sum / buffer.length);
+            const elapsed = performance.now() - recordStartTime;
+
+            if (elapsed < 180 && rms < 0.06) {
+                calibrationFrames.push(rms);
+                const avgNoise = calibrationFrames.reduce((a, b) => a + b, 0) / calibrationFrames.length;
+                state.noiseFloorRms = Math.max(0.018, avgNoise * 2.4);
+            }
+
+            const effectiveRms = Math.max(0, rms - state.noiseFloorRms * 0.6);
+            document.getElementById('volumeBar').style.width = `${Math.min(100, Math.round(effectiveRms * 500))}%`;
+
+            const hz = autoCorrelate(buffer, state.audioCtx.sampleRate, state.noiseFloorRms);
+            const liveTag = document.getElementById('livePitchTag');
+            if (hz > 0) {
+                const deg = hzToDegree(hz);
+                recordedF0Samples.push({ t: elapsed, hz, deg, rms });
+                liveTag.classList.remove('hidden');
+                liveTag.textContent = `${deg.toFixed(1)} 樓`;
+
+                if (recordedF0Samples.length >= 3) {
+                    const previewDegs = stabilizeOnsetAndTail(recordedF0Samples.map(s => s.deg));
+                    state.userPitchCurve = smoothArray(previewDegs);
+                    drawPitchChart();
+                }
+            }
+            rafId = requestAnimationFrame(analyzeAudioFrame);
+        }
+
+        function stopRecording() {
+            if (!state.isRecording) return;
+            state.isRecording = false;
+            cancelAnimationFrame(rafId);
+
+            if (mediaRecorder && mediaRecorder.state !== 'inactive') {
+                try { mediaRecorder.stop(); } catch (e) {}
+            }
+            if (mediaStream) mediaStream.getTracks().forEach(t => t.stop());
+
+            updateRecordUI(false);
+            document.getElementById('volumeBar').style.width = '0%';
+
+            if (recordedF0Samples.length < 7) {
+                showToast('聲音太小啦！再靠近麥克風大聲讀一次吧！', '📢');
+                return;
+            }
+
+            const maxRms = Math.max(...recordedF0Samples.map(s => s.rms));
+            let startIdx = recordedF0Samples.findIndex(s => s.rms >= maxRms * 0.42);
+            let endIdx = recordedF0Samples.length - 1;
+            while (endIdx > startIdx && recordedF0Samples[endIdx].rms < maxRms * 0.30) endIdx--;
+
+            const coreSamples = (startIdx !== -1 && endIdx - startIdx >= 5)
+                ? recordedF0Samples.slice(startIdx, endIdx + 1)
+                : recordedF0Samples.filter(s => s.rms >= maxRms * 0.28);
+            const validSamples = coreSamples.length >= 5 ? coreSamples : recordedF0Samples;
+
+            const cleanedHz = removeOctaveErrors(validSamples.map(s => s.hz));
+            if (state.autoAdaptRange && cleanedHz.length >= 5) {
+                adaptPitchRangeFromSpeech(cleanedHz);
+            }
+
+            const degrees = cleanedHz.map(hz => hzToDegree(hz));
+            const stabilized = stabilizeOnsetAndTail(degrees);
+            const smoothed = smoothArray(stabilized);
+
+            state.userPitchCurve = resampleArray(smoothed, 24);
+            state.userRawF0 = cleanedHz;
+
+            const durationMs = Math.round(validSamples[validSamples.length - 1].t - validSamples[0].t);
+            runKidDiagnosis(state.userPitchCurve, cleanedHz, durationMs);
+        }
+
+        /**
+         * ============================================================================
+         * 7. 兒童版鼓勵診斷與星星獎勵系統
+         * ============================================================================
+         */
+        function runKidDiagnosis(curve, rawHzArr, durationMs) {
+            const cat = state.category;
+            const n = curve.length;
+
+            const minF0 = Math.round(Math.min(...rawHzArr));
+            const maxF0 = Math.round(Math.max(...rawHzArr));
+            document.getElementById('f0RangeMeasured').textContent = localizeText(`聲音高低: ${minF0} - ${maxF0} Hz`);
+            document.getElementById('durationMeasured').textContent = localizeText(`發音長度: ${durationMs} ms`);
+
+            const focusCurve = cat === 'full' ? curve : curve.slice(0, Math.floor(n * 0.48));
+            const startDeg = focusCurve[0];
+            const endDeg = focusCurve[focusCurve.length - 1];
+            let minDeg = 5.5, minIdx = 0;
+            focusCurve.forEach((v, idx) => { if (v < minDeg) { minDeg = v; minIdx = idx; } });
+            const minPosRatio = minIdx / Math.max(1, focusCurve.length - 1);
+
+            const rStart = Math.round(Math.max(1, Math.min(5, startDeg)));
+            const rMin = Math.round(Math.max(1, Math.min(5, minDeg)));
+            const rEnd = Math.round(Math.max(1, Math.min(5, endDeg)));
+
+            let measuredDigits = (minPosRatio > 0.15 && minPosRatio < 0.85 && (startDeg - minDeg >= 0.45) && (endDeg - minDeg >= 0.55))
+                ? `${rStart}${rMin}${rEnd}`
+                : `${rStart}${rEnd}`;
+
+            let fullDisplay = measuredDigits;
+            if (cat !== 'full') {
+                const secondCurve = curve.slice(Math.ceil(n * 0.52));
+                const s2Start = Math.round(Math.max(1, Math.min(5, secondCurve[0])));
+                const s2Min = Math.round(Math.max(1, Math.min(5, Math.min(...secondCurve))));
+                const s2End = Math.round(Math.max(1, Math.min(5, secondCurve[secondCurve.length - 1])));
+                const s2Code = (s2Start - s2Min >= 0.5 && s2End - s2Min >= 0.5) ? `${s2Start}${s2Min}${s2End}` : `${s2Start}${s2End}`;
+                fullDisplay = `${measuredDigits} + ${s2Code}`;
+            }
+
+            document.getElementById('measuredCode').textContent = fullDisplay;
+            document.getElementById('expectedCodeRef').textContent = state.currentItem.code;
+
+            document.getElementById('keyPointsDetail').innerHTML = `
+                <div class="flex justify-between"><span>${localizeText('出發樓層（起點）：')}</span><span class="text-sky-700 font-mono">${startDeg.toFixed(1)} 樓</span></div>
+                <div class="flex justify-between"><span>${localizeText('最低河谷（轉折）：')}</span><span class="text-rose-600 font-mono">${minDeg.toFixed(1)} 樓</span></div>
+                <div class="flex justify-between"><span>${localizeText('飛向終點（結尾）：')}</span><span class="text-emerald-700 font-mono">${endDeg.toFixed(1)} 樓</span></div>
+            `;
+
+            // 粵語六聲相似度計算
+            const resampledFocus = resampleArray(focusCurve, 5);
+            const cantoMatches = CANTONESE_TONES.map(ct => {
+                let sqErr = 0;
+                for (let i = 0; i < 5; i++) sqErr += Math.pow(resampledFocus[i] - ct.points[i], 2);
+                const rmse = Math.sqrt(sqErr / 5);
+                const similarity = Math.max(0, Math.min(99, Math.round((1 - rmse / 3.2) * 100)));
+                return { ...ct, similarity };
+            }).sort((a, b) => b.similarity - a.similarity);
+
+            const topCanto = cantoMatches[0];
+            state.matchedCantoTone = topCanto.similarity >= 72 ? topCanto : null;
+
+            let starsEarned = 1;
+            let score = 60;
+            let headline = '';
+            let advice = '';
+            let cantoHeadline = '';
+            let cantoAnalysis = '';
+
+            if (cat === 'full') {
+                const hasDip = (startDeg - minDeg) >= 0.55 && minDeg <= 1.55;
+                const hasRise = (endDeg - minDeg) >= 1.4 && endDeg >= 3.1;
+
+                if (hasDip && hasRise) {
+                    starsEarned = 3; score = 96;
+                    headline = '太棒啦！滿分三顆星！過山車大轉彎超標準！';
+                    advice = `小音符先滑到 ${minDeg.toFixed(1)} 樓小河谷，再衝上 ${endDeg.toFixed(1)} 樓彩虹雲，聲音又好聽又標準！`;
+                } else if (!hasDip && hasRise) {
+                    starsEarned = 2; score = 70;
+                    headline = '加油喔！小音符忘記先滑下 1 樓河谷啦！';
+                    advice = `你從 ${startDeg.toFixed(1)} 樓直接往上飛了。試著先把聲音壓低到 1 樓小河谷，再往上飛高！`;
+                } else {
+                    starsEarned = 1; score = 62;
+                    headline = '再試一次！要把尾巴翹高飛向 4 樓彩虹雲喔！';
+                    advice = `小音符在谷底停住啦，單字三聲最後要像坐過山車一樣往上衝！`;
+                }
+
+                if (topCanto.num === 5 && topCanto.similarity >= 75) {
+                    cantoHeadline = `🧚 粵語第5聲小精靈（${topCanto.example}）跑出來啦！`;
+                    cantoAnalysis = `有 ${topCanto.similarity}% 像粵語第5聲喔！記住普通話三聲要先「往下沉」，再往上飛，不能直接往上滑。`;
+                } else if (topCanto.num === 4 && topCanto.similarity >= 75) {
+                    cantoHeadline = `🧚 變成了粵語第4聲（${topCanto.example}）喔！`;
+                    cantoAnalysis = `有 ${topCanto.similarity}% 像粵語第4聲，只滑下去了，最後記得加上向上飛的尾巴！`;
+                } else {
+                    cantoHeadline = `🌟 厲害！成功飛出了標準普通話三聲軌道！`;
+                    cantoAnalysis = `你的聲音彎彎的像小船，跟平平直直的粵語聲調完全不同，超級標準！`;
+                }
+
+            } else if (cat === 'half') {
+                const isLowFall = (startDeg <= 2.7) && (minDeg <= 1.55) && (endDeg - minDeg <= 0.65);
+                if (isLowFall) {
+                    starsEarned = 3; score = 95;
+                    headline = '滿分過關！半三聲小滑梯滑得又穩又準！';
+                    advice = `前面字寶寶乖乖滑到 ${endDeg.toFixed(1)} 樓就停住，沒有亂翹尾巴，跟後面的字接得超順！`;
+                } else if (endDeg - minDeg > 0.75) {
+                    starsEarned = 2; score = 68;
+                    headline = '小提醒：這裡是小滑梯，不用再往上飛囉！';
+                    advice = `半三聲只要滑到 1 樓谷底就停住，把力氣留給後面的字寶寶吧！`;
+                } else {
+                    starsEarned = 1; score = 60;
+                    headline = '再往下滑一點點，滑到 1 樓小河谷！';
+                    advice = `聲音再放低一點點，像溜滑梯一樣滑到底就對啦！`;
+                }
+
+                if (topCanto.num === 4 && topCanto.similarity >= 75) {
+                    cantoHeadline = `🎉 粵語第4聲好朋友（${topCanto.example}）幫忙成功！`;
+                    cantoAnalysis = `相似度 ${topCanto.similarity}%！普通話半三聲就跟粵語第4聲一模一樣，你用對好朋友啦！`;
+                } else if (topCanto.num === 6 && topCanto.similarity >= 75) {
+                    cantoHeadline = `🧚 變成平平的粵語第6聲（${topCanto.example}）啦！`;
+                    cantoAnalysis = `相似度 ${topCanto.similarity}%。記得要從 2 樓「往下滑」到 1 樓，不要平平走過去喔。`;
+                } else {
+                    cantoHeadline = `💡 小秘訣：請粵語第4聲（時/來）來幫忙！`;
+                    cantoAnalysis = `把第一個字讀得像粵語「時/來」一樣低低的，半三聲立刻就標準啦！`;
+                }
+
+            } else if (cat === 'sandhi') {
+                const isRising = (endDeg - startDeg >= 1.15) && (endDeg >= 3.8) && (minDeg >= 2.2);
+                if (isRising) {
+                    starsEarned = 3; score = 95;
+                    headline = '變身大成功！雙胞胎三聲變得超級好聽！';
+                    advice = `前面字寶寶成功向上飛到 ${endDeg.toFixed(1)} 樓，後面字寶寶也走完了過山車，太厲害了！`;
+                } else {
+                    starsEarned = 1; score = 62;
+                    headline = '哎呀！前面字寶寶忘記變身向上飛啦！';
+                    advice = `兩個三聲在一起時，第一個字要變成第2聲（35）向上爬坡，不能兩個都往下沉喔！`;
+                }
+
+                if (topCanto.num === 2 && topCanto.similarity >= 75) {
+                    cantoHeadline = `🎉 粵語第2聲好朋友（${topCanto.example}）變身成功！`;
+                    cantoAnalysis = `相似度 ${topCanto.similarity}%！變身後的前字跟粵語第2聲（史/九）一樣往上飛，超棒！`;
+                } else {
+                    cantoHeadline = `💡 小秘訣：借用粵語第2聲（史/九）往上飛！`;
+                    cantoAnalysis = `讀「你好、老虎」時，第一個字像粵語「史/九」一樣往上揚就過關啦！`;
+                }
+            }
+
+            // 更新星星數量與慶祝效果
+            state.stars += starsEarned;
+            document.getElementById('starCount').textContent = state.stars;
+            if (starsEarned === 3) {
+                playCelebrationChime();
+                showToast(`太厲害了！獲得 3 顆魔法星星！`, '🌟');
+            }
+
+            const starBox = document.getElementById('starRewardDisplay');
+            starBox.innerHTML = [1, 2, 3].map(i =>
+                `<span class="${i <= starsEarned ? 'star-pop' : 'opacity-25'}">⭐</span>`
+            ).join('');
+
+            document.getElementById('mandarinScoreTag').textContent = `${score} 分`;
+            document.getElementById('mandarinScoreBar').style.width = `${score}%`;
+            document.getElementById('mandarinEvalHeadline').textContent = localizeText(headline);
+            document.getElementById('mandarinEvalAdvice').textContent = localizeText(advice);
+
+            const top1 = cantoMatches[0];
+            document.getElementById('cantoSimilarityTag').textContent = `${top1.similarity}% ${localizeText('相似')}`;
+            document.getElementById('cantoMatchHeadline').textContent = localizeText(cantoHeadline);
+            document.getElementById('cantoMatchAnalysis').textContent = localizeText(cantoAnalysis);
+
+            document.getElementById('cantoTopMatches').innerHTML = cantoMatches.slice(0, 2).map((m, idx) => `
+                <span class="px-2.5 py-0.5 rounded-full ${idx === 0 ? 'bg-purple-600 text-white' : 'bg-purple-100 text-purple-800'}">
+                    ${localizeText(m.name)} (${m.code}): ${m.similarity}%
+                </span>
+            `).join('');
+
+            drawPitchChart();
+        }
+
+        /**
+         * ============================================================================
+         * 8. 趣味模擬測試與交互控制
+         * ============================================================================
+         */
+        function runSimulatedCase(simType) {
+            let simDegrees = [];
+            const cat = state.category;
+
+            if (simType === 'std') {
+                if (cat === 'full') simDegrees = [2.1, 1.8, 1.4, 1.1, 1.0, 1.2, 1.7, 2.4, 3.2, 3.9];
+                else if (cat === 'half') simDegrees = [2.1, 1.8, 1.5, 1.2, 1.0, 1.0, 4.9, 5.0, 5.0, 5.0];
+                else simDegrees = [3.0, 3.4, 3.9, 4.5, 4.9, 2.1, 1.3, 1.0, 2.3, 3.9];
+            } else if (simType === 'canto5') {
+                simDegrees = cat === 'full'
+                    ? [1.5, 1.5, 1.6, 1.8, 2.0, 2.3, 2.6, 2.8, 3.0, 3.1]
+                    : [1.5, 1.6, 1.9, 2.3, 2.8, 4.8, 4.9, 5.0, 5.0, 5.0];
+            } else if (simType === 'canto4') {
+                simDegrees = cat === 'full'
+                    ? [2.1, 1.9, 1.8, 1.6, 1.4, 1.3, 1.2, 1.1, 1.0, 1.0]
+                    : [2.1, 1.8, 1.5, 1.2, 1.0, 4.9, 5.0, 5.0, 5.0, 5.0];
+            } else if (simType === 'noSandhi') {
+                simDegrees = [2.1, 1.4, 1.0, 2.2, 3.6, 2.1, 1.3, 1.0, 2.4, 3.8];
+            }
+
+            const naturalCurve = resampleArray(simDegrees, 24).map((v, i) => v + Math.sin(i * 0.9) * 0.04);
+            const fakeHz = naturalCurve.map(d => degreeToHz(d));
+
+            state.userPitchCurve = naturalCurve;
+            state.userRawF0 = fakeHz;
+
+            playToneCurve(simDegrees, 0.7);
+            runKidDiagnosis(naturalCurve, fakeHz, 650);
+        }
+
+        function renderWordChips() {
+            const container = document.getElementById('wordChipsContainer');
+            const list = WORD_BANK[state.category];
+            container.innerHTML = list.map((item, idx) => {
+                const isSelected = state.currentItem.word === item.word;
+                return `
+                    <button data-idx="${idx}" class="word-chip kid-btn px-3 py-1.5 rounded-2xl text-xs sm:text-sm font-black border-2 flex items-center gap-1.5 ${
+                        isSelected
+                        ? 'bg-amber-400 text-slate-900 border-amber-500 shadow-sm'
+                        : 'bg-white text-slate-700 border-slate-200 hover:border-amber-300 hover:bg-amber-50'
+                    }">
+                        <span class="text-base">${item.emoji}</span>
+                        <span>${localizeText(item.word)}</span>
+                        <span class="text-[11px] font-bold ${isSelected ? 'text-amber-900' : 'text-slate-400'}">${item.pinyin}</span>
+                    </button>
+                `;
+            }).join('');
+
+            container.querySelectorAll('.word-chip').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    selectTargetItem(WORD_BANK[state.category][parseInt(btn.dataset.idx, 10)]);
+                });
+            });
+        }
+
+        function selectTargetItem(item) {
+            state.currentItem = item;
+            state.userPitchCurve = [];
+            state.matchedCantoTone = null;
+
+            document.getElementById('targetEmojiDisplay').textContent = item.emoji || '🌟';
+            document.getElementById('targetWordDisplay').textContent = localizeText(item.word);
+            document.getElementById('targetPinyinDisplay').textContent = item.pinyin;
+            document.getElementById('targetToneDigits').textContent = item.code;
+
+            renderWordChips();
+            drawPitchChart();
+        }
+
+        function switchCategory(cat) {
+            state.category = cat;
+            const styles = {
+                full: 'cat-tab active kid-btn p-3 rounded-2xl border-2 border-emerald-500 bg-emerald-500 text-white font-black text-sm sm:text-base shadow-sm flex items-center justify-center gap-2',
+                half: 'cat-tab active kid-btn p-3 rounded-2xl border-2 border-amber-500 bg-amber-500 text-white font-black text-sm sm:text-base shadow-sm flex items-center justify-center gap-2',
+                sandhi: 'cat-tab active kid-btn p-3 rounded-2xl border-2 border-purple-500 bg-purple-500 text-white font-black text-sm sm:text-base shadow-sm flex items-center justify-center gap-2'
+            };
+            const inactiveStyles = {
+                full: 'cat-tab kid-btn p-3 rounded-2xl border-2 border-emerald-200 bg-emerald-50 hover:bg-emerald-100 text-emerald-900 font-black text-sm sm:text-base flex items-center justify-center gap-2',
+                half: 'cat-tab kid-btn p-3 rounded-2xl border-2 border-amber-200 bg-amber-50 hover:bg-amber-100 text-amber-900 font-black text-sm sm:text-base flex items-center justify-center gap-2',
+                sandhi: 'cat-tab kid-btn p-3 rounded-2xl border-2 border-purple-200 bg-purple-50 hover:bg-purple-100 text-purple-900 font-black text-sm sm:text-base flex items-center justify-center gap-2'
+            };
+
+            document.querySelectorAll('.cat-tab').forEach(tab => {
+                const c = tab.dataset.cat;
+                tab.className = (c === cat) ? styles[c] : inactiveStyles[c];
+            });
+            selectTargetItem(WORD_BANK[cat][0]);
+        }
+
+        function applyLanguage() {
+            const dict = I18N_MAP[state.lang];
+            document.querySelectorAll('[data-i18n]').forEach(el => {
+                const key = el.getAttribute('data-i18n');
+                if (dict[key]) el.innerHTML = dict[key];
+            });
+            document.getElementById('btnToggleLang').textContent = state.lang === 'zh-Hant' ? '簡體' : '繁體';
+            renderWordChips();
+            renderReferenceCharts();
+            selectTargetItem(state.currentItem);
+        }
+
+        function setupCalibrationModal() {
+            const modal = document.getElementById('calibrateModal');
+            const minSlider = document.getElementById('minHzSlider');
+            const maxSlider = document.getElementById('maxHzSlider');
+            const minLabel = document.getElementById('minHzLabel');
+            const maxLabel = document.getElementById('maxHzLabel');
+
+            document.getElementById('btnOpenCalibrate').addEventListener('click', () => {
+                minSlider.value = state.minHz;
+                maxSlider.value = state.maxHz;
+                minLabel.textContent = `${state.minHz} Hz`;
+                maxLabel.textContent = `${state.maxHz} Hz`;
+                modal.classList.remove('hidden');
+            });
+
+            document.getElementById('btnCloseCalibrate').addEventListener('click', () => modal.classList.add('hidden'));
+
+            minSlider.addEventListener('input', () => {
+                if (parseInt(minSlider.value) >= parseInt(maxSlider.value) - 30) minSlider.value = parseInt(maxSlider.value) - 30;
+                minLabel.textContent = `${minSlider.value} Hz`;
+                state.autoAdaptRange = false;
+            });
+
+            maxSlider.addEventListener('input', () => {
+                if (parseInt(maxSlider.value) <= parseInt(minSlider.value) + 30) maxSlider.value = parseInt(minSlider.value) + 30;
+                maxLabel.textContent = `${maxSlider.value} Hz`;
+                state.autoAdaptRange = false;
+            });
+
+            document.querySelectorAll('.preset-voice-btn').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    const p = btn.dataset.preset;
+                    if (p === 'kid') { minSlider.value = 180; maxSlider.value = 380; state.autoAdaptRange = false; }
+                    if (p === 'adult') { minSlider.value = 130; maxSlider.value = 280; state.autoAdaptRange = false; }
+                    if (p === 'auto') { minSlider.value = 180; maxSlider.value = 380; state.autoAdaptRange = true; }
+                    minLabel.textContent = `${minSlider.value} Hz`;
+                    maxLabel.textContent = `${maxSlider.value} Hz`;
+                });
+            });
+
+            document.getElementById('btnSaveCalibrate').addEventListener('click', () => {
+                state.minHz = parseInt(minSlider.value, 10);
+                state.maxHz = parseInt(maxSlider.value, 10);
+                modal.classList.add('hidden');
+                showToast('飛行高度設定好啦，快來試試看！', '🎈');
+            });
+        }
+
+        window.addEventListener('DOMContentLoaded', () => {
+            renderWordChips();
+            renderReferenceCharts();
+            setupCalibrationModal();
+            resizeCanvas();
+            window.addEventListener('resize', resizeCanvas);
+
+            document.querySelectorAll('.cat-tab').forEach(tab => {
+                tab.addEventListener('click', () => switchCategory(tab.dataset.cat));
+            });
+
+            document.getElementById('btnApplyCustom').addEventListener('click', () => {
+                const raw = document.getElementById('customWordInput').value.trim();
+                if (!raw) {
+                    showToast('先寫上你想挑戰的漢字吧！', '✏️');
+                    return;
+                }
+                const template = WORD_BANK[state.category][0];
+                selectTargetItem({
+                    emoji: '🌟',
+                    word: raw,
+                    pinyin: '自訂挑戰',
+                    code: template.code,
+                    syllables: template.syllables,
+                    targetCurve: [...template.targetCurve]
+                });
+                showToast(`新挑戰目標：「${raw}」！`, '🎯');
+            });
+
+            document.getElementById('btnPlayTargetDemo').addEventListener('click', () => {
+                playStandardPronunciation(state.currentItem.word, state.currentItem.targetCurve);
+            });
+
+            if ('speechSynthesis' in window) {
+                window.speechSynthesis.getVoices();
+                window.speechSynthesis.onvoiceschanged = () => window.speechSynthesis.getVoices();
+            }
+
+            document.getElementById('btnRecord').addEventListener('click', toggleRecording);
+            document.getElementById('btnPlayUserAudio').addEventListener('click', () => {
+                if (state.audioBlobUrl) new Audio(state.audioBlobUrl).play();
+            });
+
+            document.querySelectorAll('.sim-btn').forEach(btn => {
+                btn.addEventListener('click', () => runSimulatedCase(btn.dataset.sim));
+            });
+
+            document.getElementById('btnToggleLang').addEventListener('click', () => {
+                state.lang = state.lang === 'zh-Hant' ? 'zh-Hans' : 'zh-Hant';
+                applyLanguage();
+            });
+        });
+    </script>
+</body>
+</html>
